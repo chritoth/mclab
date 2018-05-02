@@ -2,8 +2,8 @@ package at.tugraz.mclab.sensors;
 
 import android.content.Context;
 import android.hardware.Sensor;
-import android.hardware.SensorManager;
 import android.hardware.SensorEvent;
+import android.hardware.SensorManager;
 import android.hardware.SensorEventListener;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -14,9 +14,20 @@ import android.widget.TextView;
 
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager mSensorManager;
+    private StringBuilder sensorList;
+    private String accelerometerText;
+    private String gyroscopeText;
+    private String gravitySensorText;
+    private String linearAccelerationText;
+    private TextView sensorTextView;
+    private Sensor accelerometer;
+    private Sensor gyroscope;
+    private Sensor gravitySensor;
+    private Sensor linearAccelerationSensor;
+    private boolean readSensors = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -25,18 +36,101 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // init sensor manager and get (list of all) sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
+        accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        gyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        gravitySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
+        linearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
-        StringBuilder sensorText = new StringBuilder();
-
-        for (Sensor sensor : deviceSensors ) {
-            sensorText.append(sensor.getName()).append(
+        // build sensor list
+        sensorList = new StringBuilder();
+        for (Sensor sensor : deviceSensors) {
+            sensorList.append(sensor.getName()).append(
                     System.getProperty("line.separator"));
         }
 
-        TextView sensorTextView = (TextView) findViewById(R.id.sensor_list);
-        sensorTextView.setText(sensorText);
+        // init text view
+        sensorTextView = (TextView) findViewById(R.id.sensor_text);
+        sensorTextView.setText("Choose an option from the menu..");
+
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        if (accelerometer != null) {
+            mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+        if (gyroscope != null) {
+            mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+        if (gravitySensor != null) {
+            mSensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+        if (linearAccelerationSensor != null) {
+            mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        mSensorManager.unregisterListener(this);
+    }
+
+
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        double x, y, z;
+
+        if (readSensors == false)
+            return;
+
+        int sensorType = event.sensor.getType();
+        switch (sensorType) {
+            case Sensor.TYPE_ACCELEROMETER:
+                x = event.values[0];
+                y = event.values[1];
+                z = event.values[2];
+                accelerometerText = "Accelerometer:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
+                break;
+
+            case Sensor.TYPE_GYROSCOPE:
+                x = event.values[0];
+                y = event.values[1];
+                z = event.values[2];
+                gyroscopeText = "Gyroscope:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
+                break;
+
+            case Sensor.TYPE_GRAVITY:
+                x = event.values[0];
+                y = event.values[1];
+                z = event.values[2];
+                gravitySensorText = "Gravity Sensor:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
+                break;
+
+            case Sensor.TYPE_LINEAR_ACCELERATION:
+                x = event.values[0];
+                y = event.values[1];
+                z = event.values[2];
+                linearAccelerationText = "Linear Acceleration:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
+                break;
+
+            default:
+        }
+
+        sensorTextView.setText(accelerometerText + gyroscopeText + gravitySensorText + linearAccelerationText);
+
+        //Store data in memory, file, or in other data structure
+        //addDataToProcess(x, y, z);
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
     }
 
@@ -49,16 +143,21 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        int id = item.getItemId();
+        switch (id) {
+            case R.id.action_list_sensors:
+                readSensors = false;
+                sensorTextView.setText(sensorList);
+                break;
+            case R.id.action_show_data:
+                sensorTextView.setText("Waiting for sensor data...");
+                readSensors = true;
+                break;
+            default:
         }
 
         return super.onOptionsItemSelected(item);
     }
+
 }

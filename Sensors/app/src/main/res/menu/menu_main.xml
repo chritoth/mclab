@@ -2,9 +2,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="at.tugraz.mclab.sensors.MainActivity">
+
     <item
-        android:id="@+id/action_settings"
+        android:id="@+id/action_list_sensors"
         android:orderInCategory="100"
-        android:title="@string/action_settings"
+        android:title="List Sensors"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_show_data"
+        android:orderInCategory="100"
+        android:title="Show Sensor Data"
+        app:showAsAction="never" />
+
 </menu>

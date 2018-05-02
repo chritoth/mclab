@@ -13,13 +13,14 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_alignParentTop="true"
+        android:background="@android:color/holo_blue_bright"
         android:theme="@style/AppTheme.AppBarOverlay">
 
         <android.support.v7.widget.Toolbar
             android:id="@+id/toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
-            android:background="?attr/colorPrimary"
+            android:background="@android:color/holo_blue_bright"
             app:popupTheme="@style/AppTheme.PopupOverlay" />
 
     </android.support.design.widget.AppBarLayout>
@@ -32,7 +33,7 @@
         android:layout_below="@+id/appbar">
 
         <TextView
-            android:id="@+id/sensor_list"
+            android:id="@+id/sensor_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="(placeholder)" />
