@@ -6,13 +6,27 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorManager;
 import android.hardware.SensorEventListener;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.util.List;
+import java.io.DataInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -28,6 +42,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor gravitySensor;
     private Sensor linearAccelerationSensor;
     private boolean readSensors = false;
+    File dataFile;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,14 +62,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // build sensor list
         sensorList = new StringBuilder();
         for (Sensor sensor : deviceSensors) {
-            sensorList.append(sensor.getName()).append(
-                    System.getProperty("line.separator"));
+            sensorList.append(sensor.getName()).append(System.getProperty("line.separator"));
         }
 
         // init text view
         sensorTextView = (TextView) findViewById(R.id.sensor_text);
         sensorTextView.setText("Choose an option from the menu..");
 
+        // init file for sensor data
+        dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
+        try {
+            dataFile.delete();
+            dataFile.createNewFile();
+            dataFile.setWritable(true, false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
 
@@ -65,15 +88,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (accelerometer != null) {
             mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
         }
-        if (gyroscope != null) {
-            mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
-        }
-        if (gravitySensor != null) {
-            mSensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
-        }
-        if (linearAccelerationSensor != null) {
-            mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        }
+        //        if (gyroscope != null) {
+        //            mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+        //        }
+        //        if (gravitySensor != null) {
+        //            mSensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+        //        }
+        //        if (linearAccelerationSensor != null) {
+        //            mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
+        //        }
     }
 
     @Override
@@ -82,10 +105,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         mSensorManager.unregisterListener(this);
     }
 
-
     @Override
     public void onSensorChanged(SensorEvent event) {
-        double x, y, z;
+        double x = 0, y = 0, z = 0;
 
         if (readSensors == false)
             return;
@@ -96,7 +118,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 x = event.values[0];
                 y = event.values[1];
                 z = event.values[2];
-                accelerometerText = "Accelerometer:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
+                accelerometerText = "Accelerometer:\nx = " + x + "\ny = " + y + "\nz " + "= " + "" + z + "\n\n";
                 break;
 
             case Sensor.TYPE_GYROSCOPE:
@@ -125,8 +147,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         sensorTextView.setText(accelerometerText + gyroscopeText + gravitySensorText + linearAccelerationText);
 
-        //Store data in memory, file, or in other data structure
-        //addDataToProcess(x, y, z);
+        // write sensor data to log file
+        try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(dataFile, true), "UTF-8")) {
+            osw.write(x + ";" + y + ";" + z + "\n");
+            osw.flush();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     @Override
@@ -158,6 +188,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    /* Checks if external storage is available for read and write */
+    public boolean isExternalStorageWritable() {
+        String state = Environment.getExternalStorageState();
+        if (Environment.MEDIA_MOUNTED.equals(state)) {
+            return true;
+        }
+        return false;
     }
 
 }
