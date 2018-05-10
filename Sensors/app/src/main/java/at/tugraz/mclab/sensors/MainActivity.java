@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Map;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
@@ -85,18 +86,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onStart() {
         super.onStart();
 
-        if (accelerometer != null) {
-            mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_NORMAL);
+        // SENSOR_DELAY_NORMAL .... fs =  5,00 Hz
+        // SENSOR_DELAY_UI ........ fs = 16,67 Hz
+        // SENSOR_DELAY_GAME ...... fs = 50,00 Hz
+        // if (accelerometer != null) {
+        //     mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
+        // }
+        // if (gyroscope != null) {
+        //     mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
+        // }
+        // if (gravitySensor != null) {
+        //     mSensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
+        // }
+        if (linearAccelerationSensor != null) {
+            mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager.SENSOR_DELAY_GAME);
         }
-        //        if (gyroscope != null) {
-        //            mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
-        //        }
-        //        if (gravitySensor != null) {
-        //            mSensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
-        //        }
-        //        if (linearAccelerationSensor != null) {
-        //            mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager.SENSOR_DELAY_NORMAL);
-        //        }
     }
 
     @Override
@@ -145,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             default:
         }
 
-        sensorTextView.setText(accelerometerText + gyroscopeText + gravitySensorText + linearAccelerationText);
+        sensorTextView.setText(linearAccelerationText);
 
         // write sensor data to log file
         try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(dataFile, true), "UTF-8")) {
