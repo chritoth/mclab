@@ -1,3 +1,7 @@
+.idea/
+**/.idea
+**/*-checkpoint.ipynb
+
 # Built application files
 *.apk
 *.ap_
