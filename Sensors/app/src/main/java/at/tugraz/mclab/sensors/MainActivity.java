@@ -27,11 +27,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private static int PERIOD = 1000; // scheduling period in ms
 
     private SensorManager mSensorManager;
-
-    private String linearAccelerationText;
     private TextView sensorTextView;
     private Sensor linearAccelerationSensor;
-    File dataFile;
 
     private knn KNN;
 
@@ -72,8 +69,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    sensorTextView.setText(linearAccelerationText);
-
                     int activity = KNN.calculateKnn(features,3);
 
                     switch (activity){
@@ -108,16 +103,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // init sensor manager and get (list of all) sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-
-
         linearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-
 
         // init text view
         sensorTextView = (TextView) findViewById(R.id.sensor_text);
         sensorTextView.setText("Waiting for data");
 
-
+        // circular buffers
         xbuffer = new ArrayDeque(BUF_SIZE);
         ybuffer = new ArrayDeque(BUF_SIZE);
         zbuffer = new ArrayDeque(BUF_SIZE);
@@ -146,10 +138,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-
-
-
-
+        
         // write the measurement data into buffers
         int sensorType = event.sensor.getType();
         if (sensorType == Sensor.TYPE_LINEAR_ACCELERATION) {
