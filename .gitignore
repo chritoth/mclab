@@ -1,5 +1,6 @@
 .idea/
 **/.idea
+**/.idea/*
 **/*-checkpoint.ipynb
 
 # Built application files
