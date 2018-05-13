@@ -74,15 +74,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             sensorTextView.setText("Believe it or not, you are\n\n IDLE");
                             break;
                         case 2:
-                            sensorTextView.setText("Believe it or not, you are\n\n TURNING LEFT");
-                            break;
-                        case 3:
-                            sensorTextView.setText("Believe it or not, you are\n\n TURNING RIGHT");
-                            break;
-                        case 4:
                             sensorTextView.setText("Believe it or not, you are\n\n WALKING");
                             break;
-                        case 5:
+                        case 3:
                             sensorTextView.setText("Believe it or not, you are\n\n WAVING");
                             break;
                     }
