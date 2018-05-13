@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.widget.TextView;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Timer;
@@ -72,7 +73,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
                     sensorTextView.setText(linearAccelerationText);
-                    int activity = KNN.knn("raw/trainingdata.txt\n",features,3);
+                   InputStream trainingData = getResources().openRawResource(R.raw.trainingdata);
+                    int activity = KNN.knn(trainingData,features,3);
 
                     switch (activity){
                         case 0:

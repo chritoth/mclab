@@ -8,15 +8,16 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Locale;
 import java.util.Scanner;
 
 public class FileManager {
 
     //read training files
-    public static TrainRecord[] readTrainFile(String fileName) throws IOException{
-        File file = new File(fileName);
-        Scanner scanner = new Scanner(file).useLocale(Locale.US);
+    public static TrainRecord[] readTrainFile(InputStream fileName) throws IOException{
+        //File file = new File(fileName);
+        Scanner scanner = new Scanner(fileName);
 
         //read file
         int NumOfSamples = scanner.nextInt();

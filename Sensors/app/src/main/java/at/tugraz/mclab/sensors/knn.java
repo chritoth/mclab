@@ -1,13 +1,14 @@
 package at.tugraz.mclab.sensors;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
 
 public class knn
 {
-    public static int knn(String trainingFile, double[] testSample, int K){
+    public static int knn(InputStream trainingFile, double[] testSample, int K){
 
         TestRecord[] testingSet = convertToTestRecord(testSample);
         // make sure the input arguments are legal
