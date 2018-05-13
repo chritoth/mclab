@@ -52,7 +52,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // init sensor manager and get (list of all) sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        
+
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         gyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         gravitySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
