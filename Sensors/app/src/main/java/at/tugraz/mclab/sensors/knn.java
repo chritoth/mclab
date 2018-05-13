@@ -8,8 +8,30 @@ import java.util.Set;
 
 public class knn
 {
-    public static int knn(InputStream trainingFile, double[] testSample, int K){
+    private  TrainRecord[] trainingSet;
+    private  int K;
+    private Metric metric;
 
+    public  knn(InputStream trainingFile, int k){
+
+        if(K <= 0){
+            System.out.println("K should be larger than 0!");
+        }
+
+        K=k;
+        metric = new EuclideanDistance();
+
+        try {
+            //read trainingSet and testingSet
+            trainingSet =  FileManager.readTrainFile(trainingFile);
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public int calculateKnn(double[] testSample, int K)
+    {
         TestRecord[] testingSet = convertToTestRecord(testSample);
         // make sure the input arguments are legal
         if(K <= 0){
@@ -18,11 +40,6 @@ public class knn
         }
 
         try {
-            //read trainingSet and testingSet
-            TrainRecord[] trainingSet =  FileManager.readTrainFile(trainingFile);
-
-            //define metric
-            Metric metric = new EuclideanDistance();
 
             //test those TestRecords one by one
             int numOfTestingRecord = testingSet.length;
@@ -32,7 +49,7 @@ public class knn
                 testingSet[i].predictedLabel = classLabel; //assign the predicted label to TestRecord
             }
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
 

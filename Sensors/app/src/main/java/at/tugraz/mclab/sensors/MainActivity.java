@@ -73,8 +73,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 @Override
                 public void run() {
                     sensorTextView.setText(linearAccelerationText);
-                   InputStream trainingData = getResources().openRawResource(R.raw.trainingdata);
-                    int activity = KNN.knn(trainingData,features,3);
+
+                    int activity = KNN.calculateKnn(features,3);
 
                     switch (activity){
                         case 0:
@@ -122,16 +122,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         ybuffer = new ArrayDeque(BUF_SIZE);
         zbuffer = new ArrayDeque(BUF_SIZE);
 
-        // init file for sensor data
-        //        dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
-        //        try {
-        //            dataFile.delete();
-        //            dataFile.createNewFile();
-        //            dataFile.setWritable(true, false);
-        //        } catch (IOException e) {
-        //            e.printStackTrace();
-        //        }
-        //
+        InputStream trainingData = getResources().openRawResource(R.raw.trainingdata);
+        KNN = new knn(trainingData,3);
     }
 
     @Override
