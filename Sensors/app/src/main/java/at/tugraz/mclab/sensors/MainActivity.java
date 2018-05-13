@@ -32,7 +32,6 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager mSensorManager;
-    private StringBuilder sensorList;
     private String accelerometerText;
     private String gyroscopeText;
     private String gravitySensorText;
@@ -42,33 +41,27 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor gyroscope;
     private Sensor gravitySensor;
     private Sensor linearAccelerationSensor;
-    private boolean readSensors = false;
     File dataFile;
+
+    private knn KNN;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
 
         // init sensor manager and get (list of all) sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-        List<Sensor> deviceSensors = mSensorManager.getSensorList(Sensor.TYPE_ALL);
+        
         accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
         gyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
         gravitySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
         linearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
-        // build sensor list
-        sensorList = new StringBuilder();
-        for (Sensor sensor : deviceSensors) {
-            sensorList.append(sensor.getName()).append(System.getProperty("line.separator"));
-        }
 
         // init text view
         sensorTextView = (TextView) findViewById(R.id.sensor_text);
-        sensorTextView.setText("Choose an option from the menu..");
+        sensorTextView.setText("Waiting for data");
 
         // init file for sensor data
         dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
@@ -112,9 +105,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         double x = 0, y = 0, z = 0;
-
-        if (readSensors == false)
-            return;
 
         int sensorType = event.sensor.getType();
         switch (sensorType) {
@@ -161,6 +151,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             e.printStackTrace();
         }
 
+       // KNN.knn("classification\\jumpingLinAcc_train.txt\n","classification\\jumpingLinAcc_test.txt",3);
+
+
     }
 
     @Override
@@ -168,31 +161,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-
-        int id = item.getItemId();
-        switch (id) {
-            case R.id.action_list_sensors:
-                readSensors = false;
-                sensorTextView.setText(sensorList);
-                break;
-            case R.id.action_show_data:
-                sensorTextView.setText("Waiting for sensor data...");
-                readSensors = true;
-                break;
-            default:
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
 
     /* Checks if external storage is available for read and write */
     public boolean isExternalStorageWritable() {
