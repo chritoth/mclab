@@ -13,11 +13,6 @@ public class knn
     private Metric metric;
 
     public  knn(InputStream trainingFile, int k){
-
-        if(K <= 0){
-            System.out.println("K should be larger than 0!");
-        }
-
         K=k;
         metric = new EuclideanDistance();
 
