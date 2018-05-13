@@ -78,22 +78,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                     switch (activity){
                         case 0:
-                            sensorTextView.setText("Believe it or not, you are jumping");
+                            sensorTextView.setText("Believe it or not, you are\n\n JUMPING");
                             break;
                         case 1:
-                            sensorTextView.setText("Believe it or not, you are in idle state");
+                            sensorTextView.setText("Believe it or not, you are\n\n IDLE");
                             break;
                         case 2:
-                            sensorTextView.setText("Believe it or not, you are turning left");
+                            sensorTextView.setText("Believe it or not, you are\n\n TURNING LEFT");
                             break;
                         case 3:
-                            sensorTextView.setText("Believe it or not, you are turning right");
+                            sensorTextView.setText("Believe it or not, you are\n\n TURNING RIGHT");
                             break;
                         case 4:
-                            sensorTextView.setText("Believe it or not, you are walking");
+                            sensorTextView.setText("Believe it or not, you are\n\n WALKING");
                             break;
                         case 5:
-                            sensorTextView.setText("Believe it or not, you are waving");
+                            sensorTextView.setText("Believe it or not, you are\n\n WAVING");
                             break;
                 }
             }});
