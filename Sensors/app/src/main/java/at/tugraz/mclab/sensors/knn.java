@@ -7,38 +7,18 @@ import java.util.Set;
 
 public class knn
 {
-   /* public static void main(String[] args){
-        System.out.println("Jumping");
-        knn("classification\\jumpingLinAcc_train.txt\n","classification\\jumpingLinAcc_test.txt",3);
-        System.out.println();
+    public static int knn(String trainingFile, double[] testSample, int K){
 
-    }*/
-
-    public static void knn(String trainingFile, String testFile, int K){
-        //get the current time
-        final long startTime = System.currentTimeMillis();
-
+        TestRecord[] testingSet = convertToTestRecord(testSample);
         // make sure the input arguments are legal
         if(K <= 0){
             System.out.println("K should be larger than 0!");
-            return;
+            return -1;
         }
-
-
-        //TrainingFile and testFile should be the same group
-        String trainGroup = extractGroupName(trainingFile);
-        String testGroup = extractGroupName(testFile);
-
-        if(!trainGroup.equals(testGroup)){
-            System.out.println("trainingFile and testFile are illegal!");
-            return;
-        }
-
 
         try {
             //read trainingSet and testingSet
             TrainRecord[] trainingSet =  FileManager.readTrainFile(trainingFile);
-            TestRecord[] testingSet =  FileManager.readTestFile(testFile);
 
             //define metric
             Metric metric = new EuclideanDistance();
@@ -51,27 +31,11 @@ public class knn
                 testingSet[i].predictedLabel = classLabel; //assign the predicted label to TestRecord
             }
 
-            //calculate the accuracy
-            int correctPrediction = 0;
-            for(int j = 0; j < numOfTestingRecord; j ++){
-                if(testingSet[j].predictedLabel == testingSet[j].classLabel)
-                    correctPrediction ++;
-            }
-
-            //Output a file containing predicted labels for TestRecords
-            String predictPath = FileManager.outputFile(testingSet, trainingFile);
-            System.out.println("The prediction file is stored in "+predictPath);
-            System.out.println("The accuracy is "+((double)correctPrediction / numOfTestingRecord)*100+"%");
-
-            //print the total execution time
-            final long endTime = System.currentTimeMillis();
-            System.out.println("Total excution time: "+(endTime - startTime) / (double)1000 +" seconds.");
-
-
         } catch (IOException e) {
             e.printStackTrace();
         }
 
+        return testingSet[0].predictedLabel;
     }
 
     // Find K nearest neighbors of testRecord within trainingSet
@@ -107,6 +71,17 @@ public class knn
         }
 
         return neighbors;
+    }
+
+    //convert samples array to the TestRecord array format with just one entry
+    static TestRecord[] convertToTestRecord (double[] sample)
+    {
+        int NumOfSamples = 1;
+        TestRecord[] records = new TestRecord[NumOfSamples];
+
+        records[0].attributes = sample.clone();
+        records[0].classLabel = -1;
+        return records;
     }
 
     // Get the class label by using neighbors
@@ -151,16 +126,5 @@ public class knn
         return returnLabel;
     }
 
-    static String extractGroupName(String filePath){
-        StringBuilder groupName = new StringBuilder();
-        for(int i = 15; i < filePath.length(); i ++){
-            if(filePath.charAt(i) != '_')
-                groupName.append(filePath.charAt(i));
-            else
-                break;
-        }
-
-        return groupName.toString();
-    }
 }
 

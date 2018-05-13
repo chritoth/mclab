@@ -32,14 +32,8 @@ import java.util.Map;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
     private SensorManager mSensorManager;
-    private String accelerometerText;
-    private String gyroscopeText;
-    private String gravitySensorText;
     private String linearAccelerationText;
     private TextView sensorTextView;
-    private Sensor accelerometer;
-    private Sensor gyroscope;
-    private Sensor gravitySensor;
     private Sensor linearAccelerationSensor;
     File dataFile;
 
@@ -53,9 +47,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // init sensor manager and get (list of all) sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
-        accelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        gyroscope = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-        gravitySensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GRAVITY);
         linearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
 
@@ -79,18 +70,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     protected void onStart() {
         super.onStart();
 
-        // SENSOR_DELAY_NORMAL .... fs =  5,00 Hz
-        // SENSOR_DELAY_UI ........ fs = 16,67 Hz
-        // SENSOR_DELAY_GAME ...... fs = 50,00 Hz
-        // if (accelerometer != null) {
-        //     mSensorManager.registerListener(this, accelerometer, SensorManager.SENSOR_DELAY_GAME);
-        // }
-        // if (gyroscope != null) {
-        //     mSensorManager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_NORMAL);
-        // }
-        // if (gravitySensor != null) {
-        //     mSensorManager.registerListener(this, gravitySensor, SensorManager.SENSOR_DELAY_NORMAL);
-        // }
         if (linearAccelerationSensor != null) {
             mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager.SENSOR_DELAY_GAME);
         }
@@ -108,50 +87,43 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         int sensorType = event.sensor.getType();
         switch (sensorType) {
-            case Sensor.TYPE_ACCELEROMETER:
-                x = event.values[0];
-                y = event.values[1];
-                z = event.values[2];
-                accelerometerText = "Accelerometer:\nx = " + x + "\ny = " + y + "\nz " + "= " + "" + z + "\n\n";
-                break;
-
-            case Sensor.TYPE_GYROSCOPE:
-                x = event.values[0];
-                y = event.values[1];
-                z = event.values[2];
-                gyroscopeText = "Gyroscope:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
-                break;
-
-            case Sensor.TYPE_GRAVITY:
-                x = event.values[0];
-                y = event.values[1];
-                z = event.values[2];
-                gravitySensorText = "Gravity Sensor:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
-                break;
 
             case Sensor.TYPE_LINEAR_ACCELERATION:
                 x = event.values[0];
                 y = event.values[1];
                 z = event.values[2];
-                linearAccelerationText = "Linear Acceleration:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
+                //linearAccelerationText = "Linear Acceleration:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
+                linearAccelerationText = "";
                 break;
 
             default:
         }
 
         sensorTextView.setText(linearAccelerationText);
+        double [] dummy = {3,4};
+        int activity = KNN.knn("TrainingData.txt\n",dummy,3);
 
-        // write sensor data to log file
-        try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(dataFile, true), "UTF-8")) {
-            osw.write(x + ";" + y + ";" + z + "\n");
-            osw.flush();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
+        switch (activity){
+            case 0:
+                sensorTextView.setText("Believe it or not, you are jumping");
+                break;
+            case 1:
+                sensorTextView.setText("Believe it or not, you are in idle state");
+                break;
+            case 2:
+                sensorTextView.setText("Believe it or not, you are turning left");
+                break;
+            case 3:
+                sensorTextView.setText("Believe it or not, you are turning right");
+                break;
+            case 4:
+                sensorTextView.setText("Believe it or not, you are walking");
+                break;
+            case 5:
+                sensorTextView.setText("Believe it or not, you are waving");
+                break;
+
         }
-
-       // KNN.knn("classification\\jumpingLinAcc_train.txt\n","classification\\jumpingLinAcc_test.txt",3);
 
 
     }
