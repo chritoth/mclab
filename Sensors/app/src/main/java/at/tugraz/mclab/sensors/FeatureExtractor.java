@@ -23,16 +23,16 @@ public class FeatureExtractor {
                 0.0026214754213113576, 0.000985676833974638, -0.0007239201021445352,
                 -0.0010326454536157175, -0.0003546488346636961, 0.0004053458866948208};
 
-        public int num_taps = 48;
+        public static int NUM_TAPS = 48;
 
         public double[] filter(double[] input) {
 
-            int conv_len = num_taps + input.length - 1;
+            int conv_len = NUM_TAPS + input.length - 1;
             double[] conv = new double[conv_len];
 
             for (int n = 0; n < conv_len; n++) {
                 conv[n] = 0;
-                for (int k = 0; k < num_taps; k++) {
+                for (int k = 0; k < NUM_TAPS; k++) {
                     if ((n - k) >= 0 && (n - k) < input.length)
                         conv[n] += coeffs[k] * input[n - k];
                 }
@@ -42,12 +42,12 @@ public class FeatureExtractor {
             int start = 0;
             if (conv_len % 2 == 0) // even
             {
-                start = (conv_len - num_taps) / 2;
+                start = (conv_len - NUM_TAPS) / 2;
             } else {
-                start = (conv_len - num_taps - 1) / 2;
+                start = (conv_len - NUM_TAPS - 1) / 2;
             }
 
-            double[] output = Arrays.copyOfRange(conv, start, start + num_taps);
+            double[] output = Arrays.copyOfRange(conv, start, start + NUM_TAPS);
 
             return output;
         }
@@ -93,7 +93,7 @@ public class FeatureExtractor {
         fft.fft(re, im);
         double[] magnitude = new double[NDFT / 2];
         for (int i = 0; i < NDFT / 2; i++)
-            magnitude[i] = Math.sqrt(re[i] * re[i] + im[i] * im[i]); // could do scaling here..
+            magnitude[i] = Math.sqrt(re[i] * re[i] + im[i] * im[i]) * fft.scaling_1sided;
 
         return magnitude;
     }

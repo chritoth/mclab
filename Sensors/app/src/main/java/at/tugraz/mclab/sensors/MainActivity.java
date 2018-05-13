@@ -7,12 +7,8 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.widget.TextView;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayDeque;
 import java.util.Iterator;
@@ -30,7 +26,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private TextView sensorTextView;
     private Sensor linearAccelerationSensor;
 
-    private knn KNN;
+    private KNN knnClassifier;
 
     private ArrayDeque<Double> xbuffer;
     private ArrayDeque<Double> ybuffer;
@@ -39,7 +35,6 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private final TimerTask taskUIUpdate = new UIUpdateThread();
     private final ReentrantLock bufferLock = new ReentrantLock();
     private final FeatureExtractor featureExtractor = new FeatureExtractor();
-
 
     private class UIUpdateThread extends TimerTask {
         @Override
@@ -69,9 +64,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    int activity = KNN.calculateKnn(features,3);
+                    int activity = knnClassifier.predict(features);
 
-                    switch (activity){
+                    switch (activity) {
                         case 0:
                             sensorTextView.setText("Believe it or not, you are\n\n JUMPING");
                             break;
@@ -90,11 +85,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         case 5:
                             sensorTextView.setText("Believe it or not, you are\n\n WAVING");
                             break;
+                    }
                 }
-            }});
+            });
         }
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,7 +110,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         zbuffer = new ArrayDeque(BUF_SIZE);
 
         InputStream trainingData = getResources().openRawResource(R.raw.trainingdata);
-        KNN = new knn(trainingData,3);
+        knnClassifier = new KNN(trainingData);
     }
 
     @Override
@@ -138,36 +133,33 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        
+
         // write the measurement data into buffers
         int sensorType = event.sensor.getType();
         if (sensorType == Sensor.TYPE_LINEAR_ACCELERATION) {
 
             bufferLock.lock();
             try {
-                if (!xbuffer.isEmpty())
+                if (xbuffer.size() >= BUF_SIZE)
                     xbuffer.removeLast();
                 xbuffer.addFirst((double) event.values[0]);
-                if (!ybuffer.isEmpty())
-                    ybuffer.removeLast();
-                ybuffer.addFirst((double) event.values[1]);
-                if (!zbuffer.isEmpty())
-                    zbuffer.removeLast();
-                zbuffer.addFirst((double) event.values[2]);
 
+                ybuffer.addFirst((double) event.values[1]);
+                if (ybuffer.size() >= BUF_SIZE)
+                    ybuffer.removeLast();
+
+                zbuffer.addFirst((double) event.values[2]);
+                if (zbuffer.size() >= BUF_SIZE)
+                    zbuffer.removeLast();
             } finally {
                 bufferLock.unlock();
             }
 
         }
 
-
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-
     }
-
-
 }

@@ -42,8 +42,8 @@ public class FFT {
             0.8535533905932737, 0.9619397662556434, 1.0, 0.9619397662556434, 0.8535533905932737, 0.6913417161825451,
             0.5, 0.30865828381745497, 0.14644660940672627, 0.03806023374435674};
 
-    public static double scaling_1sided;
-    public static double scaling_2sided;
+    public double scaling_1sided;
+    public double scaling_2sided;
 
     public FFT(int n) {
         this.n = n;
@@ -66,8 +66,8 @@ public class FFT {
 
         // generate scaling factors for the given window
         scaling_2sided = 0;
-        for (int i = 0; i < window.length; i++)
-            scaling_2sided += window[i];
+        for (double coeff : window)
+            scaling_2sided += coeff;
 
         scaling_2sided = 1 / scaling_2sided;
         scaling_1sided = 2 * scaling_2sided;
