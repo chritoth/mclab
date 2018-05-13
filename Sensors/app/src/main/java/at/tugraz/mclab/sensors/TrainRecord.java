@@ -9,4 +9,6 @@ public class TrainRecord extends Record {
     TrainRecord(double[] attributes, int classLabel) {
         super(attributes, classLabel);
     }
+
+
 }

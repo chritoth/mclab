@@ -5,7 +5,10 @@ package at.tugraz.mclab.sensors;
 
 public class TestRecord extends Record{
     int predictedLabel;
-
+    public TestRecord()
+    {
+        super();
+    }
     TestRecord(double[] attributes, int classLabel) {
         super(attributes, classLabel);
     }

@@ -3,41 +3,101 @@ package at.tugraz.mclab.sensors;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
-import android.hardware.SensorManager;
 import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.os.Bundle;
-import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.List;
-import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.Map;
+import java.util.ArrayDeque;
+import java.util.Iterator;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
 
+    private static int BUF_SIZE = 48;
+    private static int START_DELAY = 1500; // start delay in ms
+    private static int PERIOD = 1000; // scheduling period in ms
+
     private SensorManager mSensorManager;
+
     private String linearAccelerationText;
     private TextView sensorTextView;
     private Sensor linearAccelerationSensor;
     File dataFile;
 
     private knn KNN;
+
+    private ArrayDeque<Double> xbuffer;
+    private ArrayDeque<Double> ybuffer;
+    private ArrayDeque<Double> zbuffer;
+    private final Timer timerUIUpdate = new Timer("timerUIUpdate");
+    private final TimerTask taskUIUpdate = new UIUpdateThread();
+    private final ReentrantLock bufferLock = new ReentrantLock();
+    private final FeatureExtractor featureExtractor = new FeatureExtractor();
+
+
+    private class UIUpdateThread extends TimerTask {
+        @Override
+        public void run() {
+
+            double[] x = new double[BUF_SIZE], y = new double[BUF_SIZE], z = new double[BUF_SIZE];
+            bufferLock.lock();
+            try {
+                int i = 0;
+                for (Iterator<Double> it = xbuffer.iterator(); it.hasNext(); ) {
+                    x[i++] = it.next();
+                }
+                i = 0;
+                for (Iterator<Double> it = ybuffer.iterator(); it.hasNext(); ) {
+                    y[i++] = it.next();
+                }
+                i = 0;
+                for (Iterator<Double> it = zbuffer.iterator(); it.hasNext(); ) {
+                    z[i++] = it.next();
+                }
+            } finally {
+                bufferLock.unlock();
+            }
+
+            final double[] features = featureExtractor.extractFeatureVectore(x, y, z);
+
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    sensorTextView.setText(linearAccelerationText);
+                    int activity = KNN.knn("raw/trainingdata.txt\n",features,3);
+
+                    switch (activity){
+                        case 0:
+                            sensorTextView.setText("Believe it or not, you are jumping");
+                            break;
+                        case 1:
+                            sensorTextView.setText("Believe it or not, you are in idle state");
+                            break;
+                        case 2:
+                            sensorTextView.setText("Believe it or not, you are turning left");
+                            break;
+                        case 3:
+                            sensorTextView.setText("Believe it or not, you are turning right");
+                            break;
+                        case 4:
+                            sensorTextView.setText("Believe it or not, you are walking");
+                            break;
+                        case 5:
+                            sensorTextView.setText("Believe it or not, you are waving");
+                            break;
+                }
+            }});
+        }
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -47,6 +107,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // init sensor manager and get (list of all) sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
 
+
         linearAccelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 
 
@@ -54,16 +115,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorTextView = (TextView) findViewById(R.id.sensor_text);
         sensorTextView.setText("Waiting for data");
 
-        // init file for sensor data
-        dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
-        try {
-            dataFile.delete();
-            dataFile.createNewFile();
-            dataFile.setWritable(true, false);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
+        xbuffer = new ArrayDeque(BUF_SIZE);
+        ybuffer = new ArrayDeque(BUF_SIZE);
+        zbuffer = new ArrayDeque(BUF_SIZE);
+
+        // init file for sensor data
+        //        dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
+        //        try {
+        //            dataFile.delete();
+        //            dataFile.createNewFile();
+        //            dataFile.setWritable(true, false);
+        //        } catch (IOException e) {
+        //            e.printStackTrace();
+        //        }
+        //
     }
 
     @Override
@@ -71,8 +137,11 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         super.onStart();
 
         if (linearAccelerationSensor != null) {
-            mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager.SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, linearAccelerationSensor, SensorManager
+                    .SENSOR_DELAY_GAME);
         }
+
+        timerUIUpdate.scheduleAtFixedRate(taskUIUpdate, START_DELAY, PERIOD);
     }
 
     @Override
@@ -83,45 +152,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     @Override
     public void onSensorChanged(SensorEvent event) {
-        double x = 0, y = 0, z = 0;
 
+
+
+
+        // write the measurement data into buffers
         int sensorType = event.sensor.getType();
-        switch (sensorType) {
+        if (sensorType == Sensor.TYPE_LINEAR_ACCELERATION) {
 
-            case Sensor.TYPE_LINEAR_ACCELERATION:
-                x = event.values[0];
-                y = event.values[1];
-                z = event.values[2];
-                //linearAccelerationText = "Linear Acceleration:\nx = " + x + "\ny = " + y + "\nz = " + z + "\n\n";
-                linearAccelerationText = "";
-                break;
+            bufferLock.lock();
+            try {
+                if (!xbuffer.isEmpty())
+                    xbuffer.removeLast();
+                xbuffer.addFirst((double) event.values[0]);
+                if (!ybuffer.isEmpty())
+                    ybuffer.removeLast();
+                ybuffer.addFirst((double) event.values[1]);
+                if (!zbuffer.isEmpty())
+                    zbuffer.removeLast();
+                zbuffer.addFirst((double) event.values[2]);
 
-            default:
-        }
-
-        sensorTextView.setText(linearAccelerationText);
-        double [] dummy = {3,4};
-        int activity = KNN.knn("TrainingData.txt\n",dummy,3);
-
-        switch (activity){
-            case 0:
-                sensorTextView.setText("Believe it or not, you are jumping");
-                break;
-            case 1:
-                sensorTextView.setText("Believe it or not, you are in idle state");
-                break;
-            case 2:
-                sensorTextView.setText("Believe it or not, you are turning left");
-                break;
-            case 3:
-                sensorTextView.setText("Believe it or not, you are turning right");
-                break;
-            case 4:
-                sensorTextView.setText("Believe it or not, you are walking");
-                break;
-            case 5:
-                sensorTextView.setText("Believe it or not, you are waving");
-                break;
+            } finally {
+                bufferLock.unlock();
+            }
 
         }
 
@@ -129,18 +182,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     }
 
     @Override
-    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+    public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
 
-
-    /* Checks if external storage is available for read and write */
-    public boolean isExternalStorageWritable() {
-        String state = Environment.getExternalStorageState();
-        if (Environment.MEDIA_MOUNTED.equals(state)) {
-            return true;
-        }
-        return false;
-    }
 
 }

@@ -78,7 +78,7 @@ public class knn
     {
         int NumOfSamples = 1;
         TestRecord[] records = new TestRecord[NumOfSamples];
-
+        records[0] = new TestRecord();
         records[0].attributes = sample.clone();
         records[0].classLabel = -1;
         return records;

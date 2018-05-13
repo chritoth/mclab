@@ -31,6 +31,7 @@ public class FileManager {
         TrainRecord[] records = new TrainRecord[NumOfSamples];
         int index = 0;
         while(scanner.hasNext()){
+            scanner.nextInt();
             double[] attributes = new double[NumOfAttributes];
             int classLabel = -1;
 
