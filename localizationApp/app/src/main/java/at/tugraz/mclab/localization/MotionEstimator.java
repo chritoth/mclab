@@ -1,7 +1,13 @@
 package at.tugraz.mclab.localization;
 
+import android.annotation.SuppressLint;
 import android.hardware.SensorEvent;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.locks.ReentrantLock;
@@ -10,7 +16,9 @@ public class MotionEstimator {
 
     public static final int IDLE = 0x0000;
     public static final int MOVING = 0x0001;
-    public static final double MOVEMENT_POWER_THRESHOLD = 0.3;
+    public static final double MOVEMENT_POWER_THRESHOLD = 0.5;
+    public static final double MAGNITUDE_THRESHOLD = 0.9;
+    public static final double FREQUENCY_THRESHOLD = 0.5;
 
     private static int BUF_SIZE = 48;
     private static int NDFT = 64;
@@ -20,8 +28,20 @@ public class MotionEstimator {
     private ArrayList<Double> ybuffer = new ArrayList<Double>(BUF_SIZE);
     private ArrayList<Double> zbuffer = new ArrayList<Double>(BUF_SIZE);
     private final ReentrantLock bufferLock = new ReentrantLock();
+    private int state = IDLE;
+    public double stepCount;
+    File dataFile;
 
-    public MotionEstimator() {
+    public MotionEstimator(File file) {
+        // init file for sensor data
+        dataFile = file;
+        try {
+            dataFile.delete();
+            dataFile.createNewFile();
+            dataFile.setWritable(true, false);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void addMeasurement(SensorEvent event) {
@@ -48,6 +68,17 @@ public class MotionEstimator {
             bufferLock.unlock();
         }
 
+        // write sensor data to log file
+        try (OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(dataFile, true)
+                , "UTF-8")) {
+            osw.write(event.values[0] + ";" + event.values[1] + ";" + event.values[2] + "\n");
+            osw.flush();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
     public void clearMeasurements() {
@@ -63,52 +94,109 @@ public class MotionEstimator {
 
     }
 
-    private double computeSignalVariance() {
+    private double mean(double[] signal) {
 
-        double xmean = 0;
-        double ymean = 0;
-        double zmean = 0;
-
-        // compute mean values for each axis
-        for (int i = 0; i < xbuffer.size(); i++) {
-            xmean += xbuffer.get(i);
-            ymean += ybuffer.get(i);
-            zmean += zbuffer.get(i);
+        // estimate mean
+        double mean = 0;
+        for (int i = 0; i < signal.length; i++) {
+            mean += signal[i];
         }
-        xmean /= xbuffer.size();
-        ymean /= ybuffer.size();
-        zmean /= zbuffer.size();
-
-        double variance = 0;
-        for (int i = 0; i < xbuffer.size(); i++) {
-            variance += Math.pow(xbuffer.get(i) - xmean, 2);
-            variance += Math.pow(ybuffer.get(i) - ymean, 2);
-            variance += Math.pow(zbuffer.get(i) - zmean, 2);
-        }
-        return variance / (xbuffer.size() + ybuffer.size() + zbuffer.size());
+        mean /= signal.length;
+        return mean;
     }
 
-    public int detectMotion() {
+    private double variance(double[] signal) {
+
+        double mean = mean(signal);
+
+        // estimate variance
+        double variance = 0;
+        for (int i = 0; i < signal.length; i++) {
+            variance += Math.pow(signal[i] - mean, 2);
+        }
+        return variance;
+    }
+
+    private double power(double[] signal) {
+
+        // estimate signal power
+        double power = 0;
+        for (int i = 0; i < signal.length; i++) {
+            power += Math.pow(signal[i], 2);
+        }
+        return power;
+    }
+
+    private Motion detectMotion() {
 
         double signalVariance;
         bufferLock.lock();
         try {
-
             // check if we have collected enough measurements..
-            if (xbuffer.size() < BUF_SIZE) {
-                return IDLE;
+            if (zbuffer.size() < BUF_SIZE) {
+                return new Motion(false);
             }
 
-            signalVariance = computeSignalVariance();
-            System.out.println("Signal Variance is " + signalVariance);
+            // convert buffer into double[]
+            double[] signal = new double[BUF_SIZE];
+            for (int i = 0; i < BUF_SIZE; i++) {
+                signal[i] = zbuffer.get(i);
+            }
+
+            // remove mean from signal
+            double zmean = mean(signal);
+            for (int i = 0; i < BUF_SIZE; i++) {
+                signal[i] = signal[i] - zmean;
+            }
+
+            double zVariance = power(signal);
+            System.out.println("Z axis variance is " + zVariance);
+            if (zVariance <= MOVEMENT_POWER_THRESHOLD)
+                return new Motion(false);
+
+            //double[] zmagnitudes = dftAnalysis.dft(zbuffer.toArray(new Double[0]));
+            double[] zmagnitudes = dftAnalysis.dft(signal);
+
+            // find maximum magnitude and fundamental frequency of the motion (ignore mean)
+            double max = -1;
+            double fmax = 0;
+            for (int idx = 0; idx < zmagnitudes.length; idx++) {
+                if (zmagnitudes[idx] >= max) {
+                    max = zmagnitudes[idx];
+                    fmax = dftAnalysis.frequencies[idx];
+                }
+            }
+
+            System.out.println("Found max magnitude/freq as " + max + "/" + fmax);
+
+            if (max < MAGNITUDE_THRESHOLD || fmax < FREQUENCY_THRESHOLD)
+                return new Motion(false);
+
+            return new Motion(true, fmax);
+
         } finally {
             bufferLock.unlock();
         }
-
-        if (signalVariance <= MOVEMENT_POWER_THRESHOLD)
-            return IDLE;
-        else
-            return MOVING;
     }
 
+    public int estimateMotion(double observationTime) {
+        Motion motion = detectMotion();
+
+        switch (state) {
+            case IDLE:
+                if (motion.isMoving) {
+                    stepCount = 0;
+                    state = MOVING;
+                }
+                break;
+            case MOVING:
+                if (motion.isMoving) {
+                    stepCount += motion.frequency * observationTime;
+                } else {
+                    state = IDLE;
+                }
+                break;
+        }
+        return state;
+    }
 }

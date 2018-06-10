@@ -9,9 +9,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import java.io.InputStream;
-import java.util.ArrayDeque;
-import java.util.Iterator;
+import android.os.Bundle;
+import android.os.Environment;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
+
+import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -22,9 +26,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SensorManager mSensorManager;
     private TextView sensorTextView;
     private Sensor accelerationSensor;
-    private MotionEstimator motionEstimator = new MotionEstimator();
-    private final Timer timerUIUpdate = new Timer("timerUIUpdate");
+    private MotionEstimator motionEstimator;
+    private final Timer timerUIUpdate;
     private final TimerTask taskUIUpdate = new UIUpdateThread();
+
+    public MainActivity() {
+        timerUIUpdate = new Timer("timerUIUpdate");
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,11 +44,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         accelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
 
         // init text view
-        sensorTextView = (TextView) findViewById(R.id.sensor_text);
+        sensorTextView = findViewById(R.id.sensor_text);
         sensorTextView.setText("Waiting for data...");
 
         // schedule UI update thread
         timerUIUpdate.scheduleAtFixedRate(taskUIUpdate, START_DELAY, PERIOD);
+
+        // create motion estimator
+        File dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
+        motionEstimator = new MotionEstimator(dataFile);
     }
 
     @Override
@@ -80,17 +92,21 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private class UIUpdateThread extends TimerTask {
         @Override
         public void run() {
-            final int motionState = motionEstimator.detectMotion();
+            final int motionState = motionEstimator.estimateMotion(PERIOD / 1000.0);
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     switch (motionState) {
                         case MotionEstimator.IDLE:
-                            sensorTextView.setText("Believe it or not, you are\n\n IDLE");
+                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " +
+                                                           Math.round(motionEstimator.stepCount)
+                                                           + " steps taken lately)");
                             break;
                         case MotionEstimator.MOVING:
-                            sensorTextView.setText("Believe it or not, you are\n\n MOVING");
+                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" +
+                                                           motionEstimator.stepCount + "steps " +
+                                                           "taken)");
                             break;
                     }
                 }
