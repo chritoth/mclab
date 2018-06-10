@@ -9,12 +9,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import android.os.Bundle;
-import android.os.Environment;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.util.Log;
-
 import java.io.File;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -26,6 +20,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private SensorManager mSensorManager;
     private TextView sensorTextView;
     private Sensor accelerationSensor;
+    private Sensor magnetometerSensor;
     private MotionEstimator motionEstimator;
     private final Timer timerUIUpdate;
     private final TimerTask taskUIUpdate = new UIUpdateThread();
@@ -42,6 +37,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // init sensor manager and get sensors
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         accelerationSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        magnetometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
 
         // init text view
         sensorTextView = findViewById(R.id.sensor_text);
@@ -52,7 +48,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // create motion estimator
         File dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
-        motionEstimator = new MotionEstimator(dataFile);
+        motionEstimator = new MotionEstimator(dataFile, mSensorManager);
     }
 
     @Override
@@ -63,6 +59,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         if (accelerationSensor != null) {
             mSensorManager.registerListener(this, accelerationSensor, SensorManager
                     .SENSOR_DELAY_GAME);
+        }
+        if (accelerationSensor != null) {
+            mSensorManager.registerListener(this, magnetometerSensor, SensorManager
+                    .SENSOR_DELAY_NORMAL);
         }
 
         // clear buffers to make sure we throw away old measurements..
@@ -81,6 +81,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // write the measurement data into buffers
         int sensorType = event.sensor.getType();
         if (sensorType == Sensor.TYPE_ACCELEROMETER) {
+            motionEstimator.addMeasurement(event);
+        } else if (sensorType == Sensor.TYPE_MAGNETIC_FIELD) {
             motionEstimator.addMeasurement(event);
         }
     }
@@ -101,12 +103,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                         case MotionEstimator.IDLE:
                             sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " +
                                                            Math.round(motionEstimator.stepCount)
-                                                           + " steps taken lately)");
+                                                           + " steps taken lately in direction "
+                                                           + motionEstimator.orientationAngle +
+                                                           ")");
                             break;
                         case MotionEstimator.MOVING:
                             sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" +
                                                            motionEstimator.stepCount + "steps " +
-                                                           "taken)");
+                                                           "takenin direction " + motionEstimator
+                                    .orientationAngle + ")");
                             break;
                     }
                 }
