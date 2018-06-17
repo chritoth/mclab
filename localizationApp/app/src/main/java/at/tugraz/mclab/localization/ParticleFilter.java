@@ -4,28 +4,48 @@ import java.util.Random;
 
 public class ParticleFilter {
 
-    private final int Ns; // number of particles
-    private Particle[] particles;
+    private static final double MAP_HEADING_OFFSET = -75.0; // map north orientation offset
     private static final double HEADING_STD_DEV = 10.0; // std deviation of the heading uncertainty in degree
     private static final double STRIDE_UNCERTAINTY = 10.0; // uncertainty in % of the measured stride
+    private static final double STRIDE_MIN = 0.5; // minimum expected human stride length
+    private static final double STRIDE_MAX = 1.2; // maximum expected human stride length
+
+    private final int Ns; // number of particles
+    private Particle[] particles;
+    private FloorPlan floorPlan;
 
     public ParticleFilter(int Ns) {
+        this.floorPlan = new FloorPlan();
         this.Ns = Ns;
     }
 
-    private void init() {
+    private void generateInitialParticles() {
         Random rngPos = new Random();
         Random rngStride = new Random();
 
-        // generate initial samples
-        for (Particle particle : particles) {
-            // TODO: consider position constraints given the floor map...
-            particle.setX(rngPos.nextDouble());
-            particle.setY(rngPos.nextDouble());
-            double stride = (Particle.SMIN + Particle.SMAX) / 2.0 + (Particle.SMAX - Particle.SMIN) * rngStride
-                    .nextDouble();
-            particle.setS(stride);
+        // particle weight: initially we have equally probable particles
+        double weight = 1.0 / Ns;
+
+        int particleIdx = 0;
+        int numberOfParticles = 0;
+        for (Room room : floorPlan.rooms) {
+
+            // compute the aliquot number of particles for this room (w.r.t. the total area)
+            numberOfParticles += (int) Math.ceil(Ns * room.area / floorPlan.totalArea);
+
+            // generate uniformly distributed particles all over the room
+            while (particleIdx < numberOfParticles && particleIdx < Ns) {
+
+                double x = room.getRoomCenter().getX() + room.getXLength() * rngPos.nextDouble();
+                double y = room.getRoomCenter().getY() + room.getYLength() * rngPos.nextDouble();
+                Position position = new Position(x, y);
+
+                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) * rngStride.nextDouble();
+                particles[particleIdx] = new Particle(position, stride, weight);
+
+            }
         }
+        assert numberOfParticles != Ns;
     }
 
     public void moveParticles(int stepCount, double direction) {
@@ -33,23 +53,31 @@ public class ParticleFilter {
         Random rngHeading = new Random();
 
         for (Particle particle : particles) {
-            particle.updateLastPosition();
 
-            double stride = stepCount * particle.getS();
+            double stride = stepCount * particle.getStrideLength();
             stride += 2.0 * STRIDE_UNCERTAINTY * stride * (rngStride.nextDouble() - 0.5);
 
-            double heading = direction + HEADING_STD_DEV * rngHeading.nextGaussian();
+            double heading = direction + HEADING_STD_DEV * rngHeading.nextGaussian() + MAP_HEADING_OFFSET;
 
-            particle.setX(particle.getX() + stride + Math.cos(heading));
-            particle.setY(particle.getY() + stride + Math.sin(heading));
+            // compute new position given the step count + heading
+            double x = particle.getX() + stride + Math.cos(heading);
+            double y = particle.getY() + stride + Math.sin(heading);
+
+            particle.updateLastPosition();
+            particle.setPosition(new Position(x, y));
         }
     }
 
     public void eliminateParticles() {
-        // TODO: eliminate particles violating physical constraints given by the floor map
+
+        // eliminate particles violating physical constraints given by the floor map
         for (Particle particle : particles) {
-            if (false) { //particles violate the constraints
-                particle.setWeight(0.0); // set particle weight/probability to 0
+            for (Line wall : floorPlan.walls) {
+                // check if the line of movement intersects any wall
+                Line movementLine = new Line(particle.getLastPosition(), particle.getPosition());
+                if (movementLine.intersects(wall)) {
+                    particle.setWeight(0.0); // set particle weight/probability to 0
+                }
             }
         }
 
@@ -79,7 +107,7 @@ public class ParticleFilter {
         }
 
         Random rng = new Random();
-        double p_step = 1.0 / Ns; // probablility step size for resampling (new sample weight)
+        double p_step = 1.0 / Ns; // probability step size for resampling (new sample weight)
         double p_resample = (rng.nextDouble() - 1) * p_step;
         int cdf_idx = 0;
 
