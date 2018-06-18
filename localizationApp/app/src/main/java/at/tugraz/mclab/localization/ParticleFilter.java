@@ -17,6 +17,8 @@ public class ParticleFilter {
     public ParticleFilter(int Ns) {
         this.floorPlan = new FloorPlan();
         this.Ns = Ns;
+
+        generateInitialParticles();
     }
 
     private void generateInitialParticles() {
@@ -58,6 +60,7 @@ public class ParticleFilter {
             stride += 2.0 * STRIDE_UNCERTAINTY * stride * (rngStride.nextDouble() - 0.5);
 
             double heading = direction + HEADING_STD_DEV * rngHeading.nextGaussian() + MAP_HEADING_OFFSET;
+            heading = Math.toRadians(heading);
 
             // compute new position given the step count + heading
             double x = particle.getX() + stride + Math.cos(heading);
@@ -83,7 +86,7 @@ public class ParticleFilter {
 
     }
 
-    private void normalizeParticleWeights() {
+    public void normalizeParticleWeights() {
         double totalWeight = 0.0;
 
         // compute total weight

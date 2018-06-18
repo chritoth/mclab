@@ -68,8 +68,8 @@ public class MotionEstimator {
             bufferLock.lock();
             try {
 
-                System.out.println("New buffer values are " + event.values[0] + " " + event
-                        .values[1] + " " + event.values[2]);
+                System.out.println("New buffer values are " + event.values[0] + " " + event.values[1] + " " + event
+                        .values[2]);
                 // remove first element (leftmost; oldest element..) if buffer is filled + add new
                 // sample at the end of the list
                 if (xbuffer.size() >= BUF_SIZE)
@@ -102,8 +102,7 @@ public class MotionEstimator {
 
             System.arraycopy(event.values, 0, mMagnetometerReading, 0, mMagnetometerReading.length);
 
-            mSensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading,
-                                             mMagnetometerReading);
+            mSensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading, mMagnetometerReading);
 
             mSensorManager.getOrientation(mRotationMatrix, mOrientationAngles);
 
@@ -135,14 +134,22 @@ public class MotionEstimator {
     }
 
     public void clearMeasurements() {
+
+        // remove all measurements from the buffers..
         bufferLock.lock();
         try {
-            // remove all measurements from the buffers..
             xbuffer.clear();
             ybuffer.clear();
             zbuffer.clear();
         } finally {
             bufferLock.unlock();
+        }
+
+        orientationBufferLock.lock();
+        try {
+            orientationBuffer.clear();
+        } finally {
+            orientationBufferLock.unlock();
         }
 
     }

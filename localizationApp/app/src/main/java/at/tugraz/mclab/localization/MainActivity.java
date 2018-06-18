@@ -16,6 +16,7 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
     private static final int START_DELAY = 2000; // start delay in ms
     private static final int PERIOD = 1000; // scheduling period in ms
+    private static final int NUMBER_OF_PARTICLES = 10000;
 
     private SensorManager mSensorManager;
     private TextView sensorTextView;
@@ -23,10 +24,14 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor magnetometerSensor;
     private MotionEstimator motionEstimator;
     private final Timer timerUIUpdate;
-    private final TimerTask taskUIUpdate = new UIUpdateThread();
+    private final TimerTask taskUIUpdate;
+    private int lastMotionState;
+    private ParticleFilter particleFilter;
 
     public MainActivity() {
+        taskUIUpdate = new UIUpdateThread();
         timerUIUpdate = new Timer("timerUIUpdate");
+        particleFilter = new ParticleFilter(NUMBER_OF_PARTICLES);
     }
 
     @Override
@@ -49,6 +54,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // create motion estimator
         File dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
         motionEstimator = new MotionEstimator(dataFile, mSensorManager);
+
+        // set last motion state to idle
+        lastMotionState = MotionEstimator.IDLE;
     }
 
     @Override
@@ -57,12 +65,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // register sensor listeners
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, accelerationSensor, SensorManager
-                    .SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, accelerationSensor, SensorManager.SENSOR_DELAY_GAME);
         }
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, magnetometerSensor, SensorManager
-                    .SENSOR_DELAY_NORMAL);
+            mSensorManager.registerListener(this, magnetometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
         }
 
         // clear buffers to make sure we throw away old measurements..
@@ -95,23 +101,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void run() {
             final int motionState = motionEstimator.estimateMotion(PERIOD / 1000.0);
+            final int stepCount = (int) Math.round(motionEstimator.stepCount);
+            final double orientationAngle = motionEstimator.orientationAngle;
+
+            // when we switch from moving to idle, we update the particles !!
+            if (lastMotionState == MotionEstimator.MOVING && motionState == MotionEstimator.IDLE) {
+                particleFilter.moveParticles(stepCount, orientationAngle);
+                particleFilter.eliminateParticles();
+                particleFilter.normalizeParticleWeights();
+                particleFilter.resampleParticles();
+            }
+            lastMotionState = motionState;
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
                     switch (motionState) {
                         case MotionEstimator.IDLE:
-                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " +
-                                                           Math.round(motionEstimator.stepCount)
-                                                           + " steps taken lately in direction "
-                                                           + motionEstimator.orientationAngle +
-                                                           ")");
+                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps "
+                                                           + "taken lately in direction " + orientationAngle + ")");
                             break;
                         case MotionEstimator.MOVING:
-                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" +
-                                                           motionEstimator.stepCount + "steps " +
-                                                           "takenin direction " + motionEstimator
-                                    .orientationAngle + ")");
+                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps "
+                                                           + "takenin direction " + orientationAngle + ")");
                             break;
                     }
                 }
