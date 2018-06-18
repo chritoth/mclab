@@ -2,6 +2,9 @@ package at.tugraz.mclab.localization;
 
 public class Position {
 
+    public static final int CLOCKWISE = -1;
+    public static final int COLINEAR = 0;
+    public static final int COUNTERCLOCKWISE = 1;
     private double x; // x position coordinate
     private double y; // y position coordinate
 
@@ -50,5 +53,14 @@ public class Position {
 
     public boolean below(Position position) {
         return position.y < y ? true : false;
+    }
+
+    public static int orientation(Position a, Position b, Position c) {
+        double area = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+
+        if (area == 0.0)
+            return COLINEAR;
+
+        return area > 0.0 ? COUNTERCLOCKWISE : CLOCKWISE;
     }
 }
