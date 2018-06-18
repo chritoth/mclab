@@ -40,11 +40,14 @@ or Math in Paper Title or Abstract.
 component, formatting, style, styling, insert
 \end{IEEEkeywords}
 
-\section{Introduction}
-This document is a model and instructions for \LaTeX.
-Please observe the conference page limits. 
+\section{Task Description}
+In order to get familiar with the sensing possibilities provided by smart phones the objective of this work was to develop a simple activity monitoring app running on Android. The desired app should eventually be able to recognize different user movement patterns like walking or jumping. Further requirements are to use appropriate sensor data provided by android and to classify the collected data utilizing a K-Nearest Neighbor (KNN)~\cite{knn1}\cite{knn2} algorithm.
+Our resultant app collects sensor readings from the Androids linear acceleration sensor and extracts 48 frequency domain features every second. The resulting feature vector is classified using KNN over a training set of 172 training samples. We classify movement patterns into four different activities which are idle, jumping, walking and waving.
 
-\section{Ease of Use}
+The remainder of this report is structured as follows. In Section~\ref{sec:features} we explain the feature engineering and extraction process. In Section ....
+
+\section{Feature Engineering}
+\label{sec:features}
 
 \subsection{Maintaining the Integrity of the Specifications}
 
@@ -243,8 +246,8 @@ For papers published in translation journals, please give the English
 citation first, followed by the original foreign-language citation \cite{b6}.
 
 \begin{thebibliography}{00}
-\bibitem{b1} G. Eason, B. Noble, and I. N. Sneddon, ``On certain integrals of Lipschitz-Hankel type involving products of Bessel functions,'' Phil. Trans. Roy. Soc. London, vol. A247, pp. 529--551, April 1955.
-\bibitem{b2} J. Clerk Maxwell, A Treatise on Electricity and Magnetism, 3rd ed., vol. 2. Oxford: Clarendon, 1892, pp.68--73.
+\bibitem{knn1} Fix, E., Hodges, J.L. Discriminatory analysis, nonparametric discrimination: Consistency properties. Technical Report 4, USAF School of Aviation Medicine, Randolph Field, Texas, 1951.
+\bibitem{knn2} Cover, T.M., Hart, P.E. Nearest neighbor pattern classification. IEEE Trans. Inform. Theory, IT-13(1):21–27, 1967.
 \bibitem{b3} I. S. Jacobs and C. P. Bean, ``Fine particles, thin films and exchange anisotropy,'' in Magnetism, vol. III, G. T. Rado and H. Suhl, Eds. New York: Academic, 1963, pp. 271--350.
 \bibitem{b4} K. Elissa, ``Title of paper if known,'' unpublished.
 \bibitem{b5} R. Nicole, ``Title of paper with only first word capitalized,'' J. Name Stand. Abbrev., in press.
