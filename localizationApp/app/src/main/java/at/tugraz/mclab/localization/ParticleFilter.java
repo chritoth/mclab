@@ -5,8 +5,10 @@ import java.util.Random;
 public class ParticleFilter {
 
     private static final double MAP_HEADING_OFFSET = -75.0; // map north orientation offset
-    private static final double HEADING_STD_DEV = 10.0; // std deviation of the heading uncertainty in degree
-    private static final double STRIDE_UNCERTAINTY = 10.0; // uncertainty in % of the measured stride
+    private static final double HEADING_STD_DEV = 10.0; // std deviation of the heading
+    // uncertainty in degree
+    private static final double STRIDE_UNCERTAINTY = 10.0; // uncertainty in % of the measured
+    // stride
     private static final double STRIDE_MIN = 0.5; // minimum expected human stride length
     private static final double STRIDE_MAX = 1.2; // maximum expected human stride length
 
@@ -17,6 +19,7 @@ public class ParticleFilter {
     public ParticleFilter(int Ns) {
         this.floorPlan = new FloorPlan();
         this.Ns = Ns;
+        this.particles = new Particle[Ns];
 
         generateInitialParticles();
     }
@@ -33,7 +36,7 @@ public class ParticleFilter {
         for (Room room : floorPlan.rooms) {
 
             // compute the aliquot number of particles for this room (w.r.t. the total area)
-            numberOfParticles += (int) Math.ceil(Ns * room.area / floorPlan.totalArea);
+            numberOfParticles += (int) Math.round(Ns * room.area / floorPlan.totalArea);
 
             // generate uniformly distributed particles all over the room
             while (particleIdx < numberOfParticles && particleIdx < Ns) {
@@ -42,12 +45,16 @@ public class ParticleFilter {
                 double y = room.getRoomCenter().getY() + room.getYLength() * rngPos.nextDouble();
                 Position position = new Position(x, y);
 
-                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) * rngStride.nextDouble();
+                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) *
+                        rngStride.nextDouble();
                 particles[particleIdx] = new Particle(position, stride, weight);
-
+                particleIdx++;
             }
+
+            if (particleIdx >= Ns)
+                break;
         }
-        assert numberOfParticles != Ns;
+        assert particleIdx == Ns - 1;
     }
 
     public void moveParticles(int stepCount, double direction) {
@@ -59,7 +66,8 @@ public class ParticleFilter {
             double stride = stepCount * particle.getStrideLength();
             stride += 2.0 * STRIDE_UNCERTAINTY * stride * (rngStride.nextDouble() - 0.5);
 
-            double heading = direction + HEADING_STD_DEV * rngHeading.nextGaussian() + MAP_HEADING_OFFSET;
+            double heading = direction + HEADING_STD_DEV * rngHeading.nextGaussian() +
+                    MAP_HEADING_OFFSET;
             heading = Math.toRadians(heading);
 
             // compute new position given the step count + heading
@@ -117,7 +125,7 @@ public class ParticleFilter {
         for (int i = 0; i < Ns; i++) {
             p_resample += p_step;
 
-            while (p_resample > cdf[cdf_idx])
+            while (cdf_idx < (Ns - 1) && p_resample > cdf[cdf_idx])
                 cdf_idx++;
 
             particles[i] = new Particle(particles[cdf_idx]);

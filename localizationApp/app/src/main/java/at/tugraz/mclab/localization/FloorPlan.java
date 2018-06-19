@@ -11,6 +11,7 @@ public class FloorPlan {
     public FloorPlan() {
 
         // add walls on the floor plan
+        walls = new ArrayList<Line>();
         walls.add(new Line(new Position(00.00, 00.00), new Position(84.17, 00.00)));
         walls.add(new Line(new Position(00.00, 05.33), new Position(16.50, 05.33)));
         walls.add(new Line(new Position(00.00, 00.00), new Position(00.00, 05.33)));
@@ -24,6 +25,7 @@ public class FloorPlan {
         walls.add(new Line(new Position(18.50, 05.67), new Position(18.50, 14.00)));
 
         // add rooms to the floor plan
+        rooms = new ArrayList<Room>();
         rooms.add(new Room(new Position(00.00, 00.00), new Position(09.67, 04.00))); // Lab south I
         rooms.add(new Room(new Position(00.00, 04.00), new Position(09.50, 05.33))); // Lab south II
         rooms.add(new Room(new Position(09.50, 04.33), new Position(16.50, 05.33))); // Aisle
