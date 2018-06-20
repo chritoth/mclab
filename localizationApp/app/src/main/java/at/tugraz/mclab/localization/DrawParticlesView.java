@@ -2,48 +2,82 @@ package at.tugraz.mclab.localization;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Path;
+import android.graphics.PorterDuff;
+import android.media.Image;
+import android.provider.ContactsContract;
 import android.view.View;
+import android.widget.ImageView;
 
-    class DrawParticlesView extends View {
+class DrawParticlesView extends View{
         Paint mPaint;
-
         Bitmap mBitmap;
         Canvas mCanvas;
-        Path mPath;
-        Paint   mBitmapPaint;
+
+        Bitmap workingBitmap;
+        Bitmap mutableBitmap;
+
 
         public DrawParticlesView(Context context) {
             super(context);
-            // TODO Auto-generated constructor stub
+            BitmapFactory.Options myOptions = new BitmapFactory.Options();
+            myOptions.inDither = true;
+            myOptions.inScaled = false;
+            myOptions.inPreferredConfig = Bitmap.Config.ARGB_8888;// important
+            myOptions.inPurgeable = true;
+
+            mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.floorplan,myOptions);
+
             mPaint = new Paint();
             mPaint.setAntiAlias(true);
-            mPaint.setDither(true);
-            mPaint.setColor(0xFFFF0000);
-            mPaint.setStyle(Paint.Style.STROKE);
-            mPaint.setStrokeJoin(Paint.Join.ROUND);
-            mPaint.setStrokeCap(Paint.Cap.ROUND);
-            mPaint.setStrokeWidth(20);
+            mPaint.setColor(Color.BLUE);
 
-            mPath = new Path();
-            mBitmapPaint = new Paint();
-            mBitmapPaint.setColor(Color.RED);
+
+            workingBitmap = Bitmap.createBitmap(mBitmap);
+            mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
+
+            mCanvas = new Canvas(mutableBitmap);
+
         }
-        @Override
-        protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-            super.onSizeChanged(w, h, oldw, oldh);
-            mBitmap = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
-            mCanvas = new Canvas(mBitmap);
+
+        /*public void drawParticles (ImageView iV, Particle [] p)
+        {
+
+         //Image size: x:129 y:429
+            for (Particle particle : p)
+            {
+                mCanvas.drawCircle((int)particle.getX(), (int)particle.getY(), 5, mPaint);
+
+                iV.setAdjustViewBounds(true);
+                iV.setImageBitmap(mutableBitmap);
+
+            }
+
+
+        }*/
+        public void drawParticles (ImageView floorPlanImageView)
+        {
+            for (int i = 0; i<=100; i+=20)
+            {
+                mCanvas.drawCircle((int)i+50, i+50, 5, mPaint);
+
+                floorPlanImageView.setAdjustViewBounds(true);
+                floorPlanImageView.setImageBitmap(mutableBitmap);
+
+            }
         }
-        @Override
-        public void onDraw(Canvas canvas) {
-            // TODO Auto-generated method stub
-            super.draw(canvas);
-            canvas.drawBitmap(mBitmap, 0, 0, mBitmapPaint);
-            canvas.drawPath(mPath, mPaint);
+
+        public void clearPanel(ImageView floorPlanImageView)
+        {
+            mCanvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+            mutableBitmap = workingBitmap.copy(Bitmap.Config.ARGB_8888, true);
+            mCanvas = new Canvas(mutableBitmap);
+            floorPlanImageView.setAdjustViewBounds(true);
+            floorPlanImageView.setImageBitmap(mutableBitmap);
         }
 
 

@@ -1,11 +1,6 @@
 package at.tugraz.mclab.localization;
 
-import android.app.Activity;
 import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
 import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -67,26 +62,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         // set last motion state to idle
         lastMotionState = MotionEstimator.IDLE;
 
+        ImageView iV = (ImageView) findViewById(R.id.floorPlanView);
+        DrawParticlesView mDrawingView = new DrawParticlesView(this);
 
-        DrawParticlesView mDrawingView=new DrawParticlesView(this);
-        ImageView mDrawingPad=(ImageView)findViewById(R.id.floorPlan);
+        mDrawingView.drawParticles(iV);
+        //mDrawingView.clearPanel(iV);
 
-        Paint paint = new Paint();
-        paint.setColor(Color.BLUE);
-        paint.setStyle(Paint.Style.FILL_AND_STROKE);
-        paint.setStrokeWidth(10);
-
-        Display display = getWindowManager().getDefaultDisplay();
-        Point size = new Point();
-        display.getSize(size);
-        int width = size.x;
-        int height = size.y;
-
-        Bitmap bmp = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
-
-        Canvas canvas = new Canvas(bmp);
-        canvas.drawCircle(bmp.getWidth()/2,bmp.getHeight()/2, 20, paint);
-        mDrawingPad.setImageBitmap(bmp);
     }
 
 
