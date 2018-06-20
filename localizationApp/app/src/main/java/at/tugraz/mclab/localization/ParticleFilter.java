@@ -13,7 +13,7 @@ public class ParticleFilter {
     private static final double STRIDE_MAX = 1.2; // maximum expected human stride length
 
     private final int Ns; // number of particles
-    private Particle[] particles;
+    public Particle[] particles;
     private FloorPlan floorPlan;
 
     public ParticleFilter(int Ns) {

@@ -24,6 +24,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
     private SensorManager mSensorManager;
     private TextView sensorTextView;
+    private ImageView imageView;
     private Sensor accelerationSensor;
     private Sensor magnetometerSensor;
     private MotionEstimator motionEstimator;
@@ -31,6 +32,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private final TimerTask taskUIUpdate;
     private int lastMotionState;
     private ParticleFilter particleFilter;
+    private DrawParticlesView drawParticlesView;
 
     public MainActivity() {
         taskUIUpdate = new UIUpdateThread();
@@ -52,6 +54,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         sensorTextView = findViewById(R.id.sensor_text);
         sensorTextView.setText("Waiting for data...");
 
+        // init image view
+        imageView = (ImageView) findViewById(R.id.floorPlanView);
+        drawParticlesView = new DrawParticlesView(this);
+        drawParticlesView.clearPanel(imageView);
+        drawParticlesView.drawParticles(imageView, particleFilter.particles);
+
         // schedule UI update thread
         timerUIUpdate.scheduleAtFixedRate(taskUIUpdate, START_DELAY, PERIOD);
 
@@ -61,15 +69,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // set last motion state to idle
         lastMotionState = MotionEstimator.IDLE;
-
-        ImageView iV = (ImageView) findViewById(R.id.floorPlanView);
-        DrawParticlesView mDrawingView = new DrawParticlesView(this);
-
-        mDrawingView.drawParticles(iV);
-        //mDrawingView.clearPanel(iV);
-
     }
-
 
     @Override
     protected void onStart() {
@@ -77,10 +77,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // register sensor listeners
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, accelerationSensor, SensorManager.SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, accelerationSensor, SensorManager
+                    .SENSOR_DELAY_GAME);
         }
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, magnetometerSensor, SensorManager.SENSOR_DELAY_NORMAL);
+            mSensorManager.registerListener(this, magnetometerSensor, SensorManager
+                    .SENSOR_DELAY_NORMAL);
         }
 
         // clear buffers to make sure we throw away old measurements..
@@ -130,12 +132,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 public void run() {
                     switch (motionState) {
                         case MotionEstimator.IDLE:
-                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps "
-                                                           + "taken lately in direction " + orientationAngle + ")");
+                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " +
+                                                           stepCount + " steps " + "taken lately " +
+                                                           "" + "in direction " +
+                                                           orientationAngle + ")");
                             break;
                         case MotionEstimator.MOVING:
-                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps "
-                                                           + "takenin direction " + orientationAngle + ")");
+                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" +
+                                                           stepCount + "steps " + "takenin " +
+                                                           "direction " + orientationAngle + ")");
                             break;
                     }
                 }
