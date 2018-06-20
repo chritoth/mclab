@@ -16,7 +16,9 @@
         app:layout_constraintHorizontal_bias="0.5"
         app:layout_constraintStart_toStartOf="parent"
         app:srcCompat="@drawable/floorplan"
-        tools:layout_editor_absoluteY="0dp" />
+        tools:layout_editor_absoluteY="0dp"
+        android:background="@drawable/image_border"
+        android:padding="1dp"/>
 
     <TextView
         android:id="@+id/sensor_text"
