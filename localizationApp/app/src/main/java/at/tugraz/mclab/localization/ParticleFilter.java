@@ -112,6 +112,7 @@ public class ParticleFilter {
     }
 
     public void resampleParticles() {
+        Particle[] resampledParticles = new Particle[Ns];
 
         // compute particle cdf
         double[] cdf = new double[Ns];
@@ -131,9 +132,11 @@ public class ParticleFilter {
             while (cdf_idx < (Ns - 1) && p_resample > cdf[cdf_idx])
                 cdf_idx++;
 
-            particles[i] = new Particle(particles[cdf_idx]);
-            particles[i].setWeight(p_step);
+            resampledParticles[i] = new Particle(particles[cdf_idx]);
+            resampledParticles[i].setWeight(p_step);
         }
+
+        particles = resampledParticles;
     }
 
 }
