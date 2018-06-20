@@ -1,12 +1,21 @@
 package at.tugraz.mclab.localization;
 
+import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
+import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.media.Image;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.Display;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import java.io.File;
@@ -57,7 +66,29 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // set last motion state to idle
         lastMotionState = MotionEstimator.IDLE;
+
+
+        DrawParticlesView mDrawingView=new DrawParticlesView(this);
+        ImageView mDrawingPad=(ImageView)findViewById(R.id.floorPlan);
+
+        Paint paint = new Paint();
+        paint.setColor(Color.BLUE);
+        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        paint.setStrokeWidth(10);
+
+        Display display = getWindowManager().getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        int width = size.x;
+        int height = size.y;
+
+        Bitmap bmp = Bitmap.createBitmap(width,height,Bitmap.Config.ARGB_8888);
+
+        Canvas canvas = new Canvas(bmp);
+        canvas.drawCircle(bmp.getWidth()/2,bmp.getHeight()/2, 20, paint);
+        mDrawingPad.setImageBitmap(bmp);
     }
+
 
     @Override
     protected void onStart() {
