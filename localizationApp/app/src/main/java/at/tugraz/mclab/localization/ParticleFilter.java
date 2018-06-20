@@ -41,8 +41,10 @@ public class ParticleFilter {
             // generate uniformly distributed particles all over the room
             while (particleIdx < numberOfParticles && particleIdx < Ns) {
 
-                double x = room.getRoomCenter().getX() + room.getXLength() * rngPos.nextDouble();
-                double y = room.getRoomCenter().getY() + room.getYLength() * rngPos.nextDouble();
+                double x = room.getRoomCenter().getX() + room.getXLength() * (rngPos.nextDouble()
+                        - 0.5);
+                double y = room.getRoomCenter().getY() + room.getYLength() * (rngPos.nextDouble()
+                        - 0.5);
                 Position position = new Position(x, y);
 
                 double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) *
