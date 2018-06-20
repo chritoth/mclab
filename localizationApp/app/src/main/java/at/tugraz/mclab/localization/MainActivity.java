@@ -20,7 +20,7 @@ import java.util.TimerTask;
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
     private static final int START_DELAY = 2000; // start delay in ms
     private static final int PERIOD = 1000; // scheduling period in ms
-    private static final int NUMBER_OF_PARTICLES = 10000;
+    private static final int NUMBER_OF_PARTICLES = 1000;
 
     private SensorManager mSensorManager;
     private TextView sensorTextView;
@@ -125,16 +125,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 particleFilter.normalizeParticleWeights();
                 particleFilter.resampleParticles();
             }
-            lastMotionState = motionState;
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+
+                    if (lastMotionState == MotionEstimator.MOVING && motionState ==
+                            MotionEstimator.IDLE) {
+                        drawParticlesView.clearPanel(imageView);
+                        drawParticlesView.drawParticles(imageView, particleFilter.particles);
+                    }
+
                     switch (motionState) {
                         case MotionEstimator.IDLE:
                             sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " +
                                                            stepCount + " steps " + "taken lately " +
-                                                           "" + "in direction " +
+                                                           "" + "" + "" + "in direction " +
                                                            orientationAngle + ")");
                             break;
                         case MotionEstimator.MOVING:
@@ -145,6 +151,9 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                     }
                 }
             });
+
+            lastMotionState = motionState;
+
         }
     }
 }

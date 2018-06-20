@@ -5,11 +5,6 @@ public class Line {
     public final Position start;
     public final Position end;
 
-    public Line() {
-        start = new Position();
-        end = new Position();
-    }
-
     public Line(Position start, Position end) {
 
         // make sure that the starting point has lower x coordinate

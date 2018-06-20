@@ -40,19 +40,19 @@ public class Position {
     }
 
     public boolean leftOf(Position position) {
-        return position.x < x ? true : false;
+        return x < position.x ? true : false;
     }
 
     public boolean rightOf(Position position) {
-        return position.x > x ? true : false;
+        return x > position.x ? true : false;
     }
 
     public boolean above(Position position) {
-        return position.y > y ? true : false;
+        return y > position.y ? true : false;
     }
 
     public boolean below(Position position) {
-        return position.y < y ? true : false;
+        return y < position.y ? true : false;
     }
 
     public static int orientation(Position a, Position b, Position c) {

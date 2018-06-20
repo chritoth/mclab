@@ -7,7 +7,7 @@ public class ParticleFilter {
     private static final double MAP_HEADING_OFFSET = -75.0; // map north orientation offset
     private static final double HEADING_STD_DEV = 10.0; // std deviation of the heading
     // uncertainty in degree
-    private static final double STRIDE_UNCERTAINTY = 10.0; // uncertainty in % of the measured
+    private static final double STRIDE_UNCERTAINTY = 0.1; // uncertainty in % of the measured
     // stride
     private static final double STRIDE_MIN = 0.5; // minimum expected human stride length
     private static final double STRIDE_MAX = 1.2; // maximum expected human stride length
@@ -48,7 +48,7 @@ public class ParticleFilter {
                 Position position = new Position(x, y);
 
                 double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) *
-                        rngStride.nextDouble();
+                        (rngStride.nextDouble() - 0.5);
                 particles[particleIdx] = new Particle(position, stride, weight);
                 particleIdx++;
             }
@@ -85,9 +85,10 @@ public class ParticleFilter {
 
         // eliminate particles violating physical constraints given by the floor map
         for (Particle particle : particles) {
+            Line movementLine = new Line(particle.getLastPosition(), particle.getPosition());
+
             for (Line wall : floorPlan.walls) {
                 // check if the line of movement intersects any wall
-                Line movementLine = new Line(particle.getLastPosition(), particle.getPosition());
                 if (movementLine.intersects(wall)) {
                     particle.setWeight(0.0); // set particle weight/probability to 0
                 }
