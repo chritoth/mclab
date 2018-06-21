@@ -82,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         }
         if (accelerationSensor != null) {
             mSensorManager.registerListener(this, magnetometerSensor, SensorManager
-                    .SENSOR_DELAY_NORMAL);
+                    .SENSOR_DELAY_GAME);
         }
 
         // clear buffers to make sure we throw away old measurements..
@@ -145,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                             break;
                         case MotionEstimator.MOVING:
                             sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" +
-                                                           stepCount + "steps " + "takenin " +
+                                                           stepCount + "steps " + "taken in " +
                                                            "direction " + orientationAngle + ")");
                             break;
                     }

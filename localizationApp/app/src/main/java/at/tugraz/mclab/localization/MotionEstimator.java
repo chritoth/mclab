@@ -24,7 +24,7 @@ public class MotionEstimator {
     public static final double FREQUENCY_THRESHOLD = 0.5;
 
     private static int BUF_SIZE = 48;
-    private static int ORIENTATION_BUF_SIZE = 5;
+    private static int ORIENTATION_BUF_SIZE = 10;
     private static int NDFT = 64;
     private final DFTAnalysis dftAnalysis = new DFTAnalysis(NDFT, BUF_SIZE);
 
@@ -37,9 +37,6 @@ public class MotionEstimator {
 
     private ArrayList<Double> orientationBuffer = new ArrayList<Double>(ORIENTATION_BUF_SIZE);
     private final ReentrantLock orientationBufferLock = new ReentrantLock();
-
-    private final float[] mRotationMatrix = new float[9];
-    private final float[] mOrientationAngles = new float[3];
 
     private int state = IDLE;
     public double stepCount;
@@ -61,25 +58,16 @@ public class MotionEstimator {
         mSensorManager = sensorManager;
     }
 
-    //---------------------------------------------------NEW CODE---------------------------------
-    double mAzimuth;
-    boolean mLastMagnetometerSet = false;
-    boolean mLastAccelerometerSet = false;
-
-
     public void addMeasurement(SensorEvent event) {
-        int sensorType = event.sensor.getType();
 
-        if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-            SensorManager.getRotationMatrixFromVector(mRotationMatrix, event.values);
-            mAzimuth = (Math.toDegrees(SensorManager.getOrientation(mRotationMatrix, mOrientationAngles)[0]) + 360) % 360;
-        }
+        int sensorType = event.sensor.getType();
         if (sensorType == Sensor.TYPE_ACCELEROMETER) {
             bufferLock.lock();
             try {
 
-                System.out.println("New buffer values are " + event.values[0] + " " + event.values[1] + " " + event
-                        .values[2]);
+                //System.out.println("New accelerometer data: " + event.values[0] + " " + event.values[1] + " " + event
+                //        .values[2]);
+
                 // remove first element (leftmost; oldest element..) if buffer is filled + add new
                 // sample at the end of the list
                 if (xbuffer.size() >= BUF_SIZE)
@@ -93,37 +81,44 @@ public class MotionEstimator {
                 if (zbuffer.size() >= BUF_SIZE)
                     zbuffer.remove(0);
                 zbuffer.add((double) event.values[2]);
+
             } finally {
-                mLastAccelerometerSet = true;
                 bufferLock.unlock();
             }
-        }  else if (sensorType == Sensor.TYPE_MAGNETIC_FIELD) {
+
+        } else if (sensorType == Sensor.TYPE_MAGNETIC_FIELD) {
 
             float[] mAccelerometerReading = new float[3];
             float[] mMagnetometerReading = new float[3];
+            float[] mRotationMatrix = new float[9];
+            float[] mOrientationAngles = new float[3];
 
             bufferLock.lock();
             try {
+                // if we have no accelerometer readings yet we just quit..
+                if (xbuffer.isEmpty())
+                    return;
+
+                // get last accelerometer readings
                 mAccelerometerReading[0] = (float) xbuffer.get(xbuffer.size() - 1).doubleValue();
                 mAccelerometerReading[1] = (float) ybuffer.get(ybuffer.size() - 1).doubleValue();
                 mAccelerometerReading[2] = (float) zbuffer.get(zbuffer.size() - 1).doubleValue();
+
             } finally {
-                mLastMagnetometerSet = true;
                 bufferLock.unlock();
             }
-        if (mLastAccelerometerSet && mLastMagnetometerSet) {
-            System.arraycopy(event.values, 0, mMagnetometerReading, 0, mMagnetometerReading.length);
-            SensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading, mMagnetometerReading);
-            SensorManager.getOrientation(mRotationMatrix, mOrientationAngles);
-            mAzimuth = (Math.toDegrees(SensorManager.getOrientation(mRotationMatrix, mOrientationAngles)[0]) + 360) % 360;
-        }
-
-
-        // write the measurement data into buffers
 
             orientationBufferLock.lock();
             try {
-                mAzimuth = Math.round(mAzimuth);
+                // get last magnetometer readings
+                System.arraycopy(event.values, 0, mMagnetometerReading, 0, mMagnetometerReading.length);
+
+                // compute the device orientation w.r.t. magnetic north (results lie in mOrientationAngles..)
+                SensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading, mMagnetometerReading);
+                SensorManager.getOrientation(mRotationMatrix, mOrientationAngles);
+                double mAzimuth = (Math.toDegrees(mOrientationAngles[0]) + 360) % 360;
+
+                // write the measurement data into buffers
                 if (orientationBuffer.size() >= ORIENTATION_BUF_SIZE)
                     orientationBuffer.remove(0);
                 orientationBuffer.add(mAzimuth);
@@ -135,7 +130,6 @@ public class MotionEstimator {
 
         }
     }
-
 
     //----------------------------------------------------------------------------------------------
 
@@ -341,7 +335,8 @@ public class MotionEstimator {
         switch (state) {
             case IDLE:
                 if (motion.isMoving) {
-                    stepCount = 0;
+                    stepCount = motion.frequency * observationTime * 0.5;
+                    orientationAngle = motion.angle;
                     state = MOVING;
                 }
                 break;
