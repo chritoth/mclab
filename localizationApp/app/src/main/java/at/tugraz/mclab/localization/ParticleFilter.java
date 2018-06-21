@@ -4,7 +4,7 @@ import java.util.Random;
 
 public class ParticleFilter {
 
-    private static final double MAP_HEADING_OFFSET = -75.0; // map north orientation offset
+    private static final double MAP_HEADING_OFFSET = 63.0; // map north orientation offset
     private static final double HEADING_STD_DEV = 10.0; // std deviation of the heading
     // uncertainty in degree
     private static final double STRIDE_UNCERTAINTY = 0.1; // uncertainty in % of the measured
@@ -41,14 +41,12 @@ public class ParticleFilter {
             // generate uniformly distributed particles all over the room
             while (particleIdx < numberOfParticles && particleIdx < Ns) {
 
-                double x = room.getRoomCenter().getX() + room.getXLength() * (rngPos.nextDouble()
-                        - 0.5);
-                double y = room.getRoomCenter().getY() + room.getYLength() * (rngPos.nextDouble()
-                        - 0.5);
+                double x = room.getRoomCenter().getX() + room.getXLength() * (rngPos.nextDouble() - 0.5);
+                double y = room.getRoomCenter().getY() + room.getYLength() * (rngPos.nextDouble() - 0.5);
                 Position position = new Position(x, y);
 
-                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) *
-                        (rngStride.nextDouble() - 0.5);
+                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) * (rngStride.nextDouble()
+                        - 0.5);
                 particles[particleIdx] = new Particle(position, stride, weight);
                 particleIdx++;
             }
@@ -68,13 +66,12 @@ public class ParticleFilter {
             double stride = stepCount * particle.getStrideLength();
             stride += 2.0 * STRIDE_UNCERTAINTY * stride * (rngStride.nextDouble() - 0.5);
 
-            double heading = direction + HEADING_STD_DEV * rngHeading.nextGaussian() +
-                    MAP_HEADING_OFFSET;
+            double heading = -direction + HEADING_STD_DEV * rngHeading.nextGaussian() + MAP_HEADING_OFFSET;
             heading = Math.toRadians(heading);
 
             // compute new position given the step count + heading
-            double x = particle.getX() + stride + Math.cos(heading);
-            double y = particle.getY() + stride + Math.sin(heading);
+            double x = particle.getX() + stride * Math.cos(heading);
+            double y = particle.getY() + stride * Math.sin(heading);
 
             particle.updateLastPosition();
             particle.setPosition(new Position(x, y));
@@ -129,10 +126,17 @@ public class ParticleFilter {
         for (int i = 0; i < Ns; i++) {
             p_resample += p_step;
 
-            while (cdf_idx < (Ns - 1) && p_resample > cdf[cdf_idx])
+            while (cdf_idx < (Ns - 1) && (p_resample > cdf[cdf_idx] || particles[cdf_idx].getWeight() == 0.0)) {
                 cdf_idx++;
+            }
 
-            resampledParticles[i] = new Particle(particles[cdf_idx]);
+            // if the resample particle weight is 0.0 (should only occur for the last part of the cdf) then we take a
+            // particle with non-zero weight..
+            if (particles[cdf_idx].getWeight() == 0.0)
+                resampledParticles[i] = new Particle(resampledParticles[i - 1]);
+            else
+                resampledParticles[i] = new Particle(particles[cdf_idx]);
+
             resampledParticles[i].setWeight(p_step);
         }
 
