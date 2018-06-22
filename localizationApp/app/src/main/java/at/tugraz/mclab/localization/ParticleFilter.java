@@ -4,8 +4,8 @@ import java.util.Random;
 
 public class ParticleFilter {
 
-    private static final double MAP_HEADING_OFFSET = 63.0; // map north orientation offset
-    private static final double HEADING_STD_DEV = 10.0; // std deviation of the heading
+    private static final double MAP_Y_HEADING_OFFSET = -63.0; // map north orientation offset for y axis (0° is y axis)
+    private static final double HEADING_STD_DEV = 15.0; // std deviation of the heading
     // uncertainty in degree
     private static final double STRIDE_UNCERTAINTY = 0.1; // uncertainty in % of the measured
     // stride
@@ -57,7 +57,7 @@ public class ParticleFilter {
         assert particleIdx == Ns - 1;
     }
 
-    public void moveParticles(int stepCount, double direction) {
+    public void moveParticles(int stepCount, double azimuth) {
         Random rngStride = new Random();
         Random rngHeading = new Random();
 
@@ -66,12 +66,13 @@ public class ParticleFilter {
             double stride = stepCount * particle.getStrideLength();
             stride += 2.0 * STRIDE_UNCERTAINTY * stride * (rngStride.nextDouble() - 0.5);
 
-            double heading = -direction + HEADING_STD_DEV * rngHeading.nextGaussian() + MAP_HEADING_OFFSET;
+            // we have to take the negative azimuth to compensate for map and world coordinate system dispute
+            double heading = -azimuth + HEADING_STD_DEV * rngHeading.nextGaussian() - MAP_Y_HEADING_OFFSET;
             heading = Math.toRadians(heading);
 
             // compute new position given the step count + heading
-            double x = particle.getX() + stride * Math.cos(heading);
-            double y = particle.getY() + stride * Math.sin(heading);
+            double x = particle.getX() + stride * Math.sin(heading);
+            double y = particle.getY() + stride * Math.cos(heading);
 
             particle.updateLastPosition();
             particle.setPosition(new Position(x, y));

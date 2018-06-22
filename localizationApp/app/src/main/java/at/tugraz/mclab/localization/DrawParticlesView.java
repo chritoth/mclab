@@ -21,9 +21,8 @@ class DrawParticlesView extends View {
     Bitmap workingBitmap;
     Bitmap mutableBitmap;
 
-    //Image size: x:123 y:429
-    private final static int PX_XMAX = 123;
-    private final static int PX_YMAX = 429;
+    private final static int PX_XMAX = 128;
+    private final static int PX_YMAX = 425;
     private final static double xScaling = PX_XMAX / 14.33; // gives x pixels per meter
     private final static double yScaling = PX_YMAX / 47.50; // gives y pixels per meter
 
@@ -52,9 +51,8 @@ class DrawParticlesView extends View {
 
         for (Particle particle : p) {
 
-            // x-y axis switched
-            int x = (int) (particle.getY() * xScaling);
-            int y = (int) (particle.getX() * yScaling);
+            int x = (int) (particle.getX() * xScaling);
+            int y = (int) (particle.getY() * yScaling);
 
             mCanvas.drawCircle(x, y, 1, mPaint);
 
@@ -65,6 +63,11 @@ class DrawParticlesView extends View {
     }
 
     public void drawParticlesTest(ImageView floorPlanImageView) {
+
+        Paint mPaint = new Paint();
+        mPaint.setAntiAlias(true);
+        mPaint.setColor(Color.RED);
+
         for (int i = 0; i <= 100; i += 20) {
             mCanvas.drawCircle((int) i + 50, i + 50, 5, mPaint);
 
@@ -77,7 +80,7 @@ class DrawParticlesView extends View {
         floorPlanImageView.setAdjustViewBounds(true);
         floorPlanImageView.setImageBitmap(mutableBitmap);
 
-        mCanvas.drawCircle((int) (4.33 * xScaling), (int) (18.5 * yScaling), 5, mPaint);
+        mCanvas.drawCircle((int) (5.33 * xScaling), (int) (18.5 * yScaling), 5, mPaint);
         floorPlanImageView.setAdjustViewBounds(true);
         floorPlanImageView.setImageBitmap(mutableBitmap);
     }

@@ -1,15 +1,12 @@
 package at.tugraz.mclab.localization;
 
 import android.content.Context;
-import android.graphics.Point;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.media.Image;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.Display;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -59,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         drawParticlesView = new DrawParticlesView(this);
         drawParticlesView.clearPanel(imageView);
         drawParticlesView.drawParticles(imageView, particleFilter.particles);
+        //drawParticlesView.drawParticlesTest(imageView);
 
         // schedule UI update thread
         timerUIUpdate.scheduleAtFixedRate(taskUIUpdate, START_DELAY, PERIOD);
@@ -77,12 +75,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // register sensor listeners
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, accelerationSensor, SensorManager
-                    .SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, accelerationSensor, SensorManager.SENSOR_DELAY_GAME);
         }
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, magnetometerSensor, SensorManager
-                    .SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, magnetometerSensor, SensorManager.SENSOR_DELAY_GAME);
         }
 
         // clear buffers to make sure we throw away old measurements..
@@ -115,44 +111,41 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         @Override
         public void run() {
             final int motionState = motionEstimator.estimateMotion(PERIOD / 1000.0);
-            final int stepCount = (int) Math.round(motionEstimator.stepCount);
-            final double orientationAngle = motionEstimator.orientationAngle;
+            final boolean stoppedMoving;
+            stoppedMoving = lastMotionState == MotionEstimator.MOVING && motionState == MotionEstimator.IDLE;
+            lastMotionState = motionState;
 
-            // when we switch from moving to idle, we update the particles !!
-            if (lastMotionState == MotionEstimator.MOVING && motionState == MotionEstimator.IDLE) {
-                particleFilter.moveParticles(stepCount, orientationAngle);
-                particleFilter.eliminateParticles();
-                particleFilter.normalizeParticleWeights();
-                particleFilter.resampleParticles();
-            }
+            final int stepCount = (int) Math.round(motionEstimator.stepCount);
+            final double azimuth = motionEstimator.azimuth;
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
 
-                    if (lastMotionState == MotionEstimator.MOVING && motionState ==
-                            MotionEstimator.IDLE) {
+                    // when we switch from moving to idle, we update the particles !!
+                    if (stoppedMoving) {
+                        particleFilter.moveParticles(stepCount, azimuth);
+                        particleFilter.eliminateParticles();
+                        particleFilter.normalizeParticleWeights();
+                        particleFilter.resampleParticles();
+
                         drawParticlesView.clearPanel(imageView);
                         drawParticlesView.drawParticles(imageView, particleFilter.particles);
                     }
 
                     switch (motionState) {
                         case MotionEstimator.IDLE:
-                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " +
-                                                           stepCount + " steps " + "taken lately " +
-                                                           "" + "" + "" + "in direction " +
-                                                           orientationAngle + ")");
+                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps "
+                                                           + "taken lately " + "" + "" + "" + "in direction " +
+                                                           azimuth + ")");
                             break;
                         case MotionEstimator.MOVING:
-                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" +
-                                                           stepCount + "steps " + "taken in " +
-                                                           "direction " + orientationAngle + ")");
+                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps "
+                                                           + "taken in " + "direction " + azimuth + ")");
                             break;
                     }
                 }
             });
-
-            lastMotionState = motionState;
 
         }
     }
