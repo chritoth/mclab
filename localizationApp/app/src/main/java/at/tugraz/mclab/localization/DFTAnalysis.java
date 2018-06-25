@@ -18,7 +18,6 @@ public class DFTAnalysis {
 
     public final double[] frequencies;
 
-
     public DFTAnalysis(int NDFT, int NSig) {
         this.NSig = NSig;
         NSigDec = (int) Math.floor(this.NSig / M);
@@ -28,7 +27,7 @@ public class DFTAnalysis {
         fft = new FFT(NDFT);
 
         double[] frequencies = new double[NSpectrum];
-        for (int i = 0; i < NSpectrum; i++){
+        for (int i = 0; i < NSpectrum; i++) {
             frequencies[i] = i * (fS / NDFT / M);
             System.out.println(frequencies[i]);
         }
@@ -84,11 +83,9 @@ public class DFTAnalysis {
         // compute DFT
         fft.fft(re, im);
         double[] magnitude = new double[NSpectrum];
-        System.out.println("Scaling: " + scaling1Sided);
-        for (int i = 0; i < NSpectrum; i++){
+        //System.out.println("Scaling: " + scaling1Sided);
+        for (int i = 0; i < NSpectrum; i++) {
             magnitude[i] = Math.sqrt(re[i] * re[i] + im[i] * im[i]) * scaling1Sided;
-            System.out.println(magnitude[i]);
-
         }
         return magnitude;
     }

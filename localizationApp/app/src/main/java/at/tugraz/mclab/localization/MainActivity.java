@@ -16,8 +16,8 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity implements SensorEventListener {
     private static final int START_DELAY = 2000; // start delay in ms
-    private static final int PERIOD = 1000; // scheduling period in ms
-    private static final int NUMBER_OF_PARTICLES = 1000;
+    private static final int PERIOD = 500; // scheduling period in ms
+    private static final int NUMBER_OF_PARTICLES = 10000;
 
     private SensorManager mSensorManager;
     private TextView sensorTextView;
@@ -25,15 +25,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private Sensor accelerationSensor;
     private Sensor magnetometerSensor;
     private MotionEstimator motionEstimator;
-    private final Timer timerUIUpdate;
-    private final TimerTask taskUIUpdate;
+    private final Timer timerMotionEstimation;
+    private final MotionEstimationThread motionEstimationThread;
+    private final ParticleUpdateThread particleUpdateThread;
     private int lastMotionState;
     private ParticleFilter particleFilter;
     private DrawParticlesView drawParticlesView;
 
     public MainActivity() {
-        taskUIUpdate = new UIUpdateThread();
-        timerUIUpdate = new Timer("timerUIUpdate");
+        motionEstimationThread = new MotionEstimationThread();
+        particleUpdateThread = new ParticleUpdateThread();
+        timerMotionEstimation = new Timer("timerMotionEstimation");
         particleFilter = new ParticleFilter(NUMBER_OF_PARTICLES);
     }
 
@@ -59,7 +61,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         //drawParticlesView.drawParticlesTest(imageView);
 
         // schedule UI update thread
-        timerUIUpdate.scheduleAtFixedRate(taskUIUpdate, START_DELAY, PERIOD);
+        timerMotionEstimation.scheduleAtFixedRate(motionEstimationThread, START_DELAY, PERIOD);
+
+        // start particle update thread
+        particleUpdateThread.start();
 
         // create motion estimator
         File dataFile = new File(getExternalFilesDir(null), "sensorData.txt");
@@ -107,46 +112,100 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     public void onAccuracyChanged(Sensor sensor, int i) {
     }
 
-    private class UIUpdateThread extends TimerTask {
+    private class MotionEstimationThread extends TimerTask {
+
         @Override
         public void run() {
-            final int motionState = motionEstimator.estimateMotion(PERIOD / 1000.0);
-            final boolean stoppedMoving;
-            stoppedMoving = lastMotionState == MotionEstimator.MOVING && motionState == MotionEstimator.IDLE;
-            lastMotionState = motionState;
 
-            final int stepCount = (int) Math.round(motionEstimator.stepCount);
-            final double azimuth = motionEstimator.azimuth;
+            System.out.println("Starting Motion Estimation update!");
+
+            int motionState = motionEstimator.estimateMotion(PERIOD / 1000.0);
+            double stepCount = motionEstimator.stepCount;
+            double azimuth = motionEstimator.azimuth;
+
+            // check if we stopped moving and possibly update GUI
+            if (lastMotionState == MotionEstimator.MOVING && motionState == MotionEstimator.IDLE) {
+                particleUpdateThread.updateParticles(stepCount, azimuth);
+            }
+            lastMotionState = motionState;
+            updateTextView(motionState, stepCount, azimuth);
+
+        }
+    }
+
+    private class ParticleUpdateThread implements Runnable {
+
+        private Thread thread;
+        private double stepCount;
+        private double azimuth;
+
+        public ParticleUpdateThread() {
+        }
+
+        public void start() {
+
+            System.out.println("Starting Particle update!");
+            if (thread == null) {
+                thread = new Thread(this);
+                thread.start();
+            }
+        }
+
+        public void updateParticles(double stepCount, double azimuth) {
+            System.out.println("Starting Particle update!");
+            this.azimuth = azimuth;
+            this.stepCount = stepCount;
+
+            this.run();
+        }
+
+        @Override
+        public void run() {
+
+            System.out.println("Running Particle update!");
+
+            // when we switch from moving to idle, we update the particles !!
+            particleFilter.moveParticles(stepCount, azimuth);
+            particleFilter.eliminateParticles();
+            particleFilter.normalizeParticleWeights();
+            particleFilter.resampleParticles();
 
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
 
-                    // when we switch from moving to idle, we update the particles !!
-                    if (stoppedMoving) {
-                        particleFilter.moveParticles(stepCount, azimuth);
-                        particleFilter.eliminateParticles();
-                        particleFilter.normalizeParticleWeights();
-                        particleFilter.resampleParticles();
-
-                        drawParticlesView.clearPanel(imageView);
-                        drawParticlesView.drawParticles(imageView, particleFilter.particles);
-                    }
-
-                    switch (motionState) {
-                        case MotionEstimator.IDLE:
-                            sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps "
-                                                           + "taken lately " + "" + "" + "" + "in direction " +
-                                                           azimuth + ")");
-                            break;
-                        case MotionEstimator.MOVING:
-                            sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps "
-                                                           + "taken in " + "direction " + azimuth + ")");
-                            break;
-                    }
+                    // draw the updated particles
+                    drawParticlesView.clearPanel(imageView);
+                    drawParticlesView.drawParticles(imageView, particleFilter.particles);
                 }
             });
 
         }
     }
+
+    protected void updateTextView(final int motionState, final double stepCount, final double azimuth) {
+
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+
+                System.out.println("Starting GUI update!");
+
+                // update the text output..
+                double direction = -azimuth - ParticleFilter.MAP_Y_HEADING_OFFSET;
+                switch (motionState) {
+                    case MotionEstimator.IDLE:
+                        sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps " +
+                                                       "taken" + " lately " + "in direction " + direction + ")");
+                        break;
+                    case MotionEstimator.MOVING:
+                        sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps " +
+                                                       "taken" + " in " + "direction " + direction + ")");
+                        break;
+                }
+            }
+        });
+
+    }
+
 }

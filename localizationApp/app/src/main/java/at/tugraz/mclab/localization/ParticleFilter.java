@@ -4,10 +4,11 @@ import java.util.Random;
 
 public class ParticleFilter {
 
-    private static final double MAP_Y_HEADING_OFFSET = -63.0; // map north orientation offset for y axis (0° is y axis)
-    private static final double HEADING_STD_DEV = 15.0; // std deviation of the heading
+    public static final double MAP_Y_HEADING_OFFSET = -63.0; // map north orientation offset for y
+    // axis (0° is y axis)
+    private static final double HEADING_STD_DEV = 30.0; // std deviation of the heading
     // uncertainty in degree
-    private static final double STRIDE_UNCERTAINTY = 0.1; // uncertainty in % of the measured
+    private static final double STRIDE_UNCERTAINTY = 0.15; // uncertainty in % of the measured
     // stride
     private static final double STRIDE_MIN = 0.5; // minimum expected human stride length
     private static final double STRIDE_MAX = 1.2; // maximum expected human stride length
@@ -57,7 +58,7 @@ public class ParticleFilter {
         assert particleIdx == Ns - 1;
     }
 
-    public void moveParticles(int stepCount, double azimuth) {
+    public void moveParticles(double stepCount, double azimuth) {
         Random rngStride = new Random();
         Random rngHeading = new Random();
 

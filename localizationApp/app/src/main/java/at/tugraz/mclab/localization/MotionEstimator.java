@@ -7,6 +7,7 @@ import android.hardware.SensorManager;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class MotionEstimator {
@@ -18,7 +19,7 @@ public class MotionEstimator {
     public static final double FREQUENCY_THRESHOLD = 0.5;
 
     private static int ACC_BUF_SIZE = 48;
-    private static int AZIMUTH_BUF_SIZE = 10;
+    private static int AZIMUTH_BUF_SIZE = 101;
     private static int NDFT = 64;
     private final DFTAnalysis dftAnalysis = new DFTAnalysis(NDFT, ACC_BUF_SIZE);
 
@@ -55,7 +56,8 @@ public class MotionEstimator {
             accBufferLock.lock();
             try {
 
-                //System.out.println("New accelerometer data: " + event.values[0] + " " + event.values[1] + " " + event
+                //System.out.println("New accelerometer data: " + event.values[0] + " " + event
+                // .values[1] + " " + event
                 //        .values[2]);
 
                 // remove first element (leftmost; oldest element..) if buffer is filled + add new
@@ -90,9 +92,12 @@ public class MotionEstimator {
                     return;
 
                 // get last accelerometer readings
-                mAccelerometerReading[0] = (float) xAccBuffer.get(xAccBuffer.size() - 1).doubleValue();
-                mAccelerometerReading[1] = (float) yAccBuffer.get(yAccBuffer.size() - 1).doubleValue();
-                mAccelerometerReading[2] = (float) zAccBuffer.get(zAccBuffer.size() - 1).doubleValue();
+                mAccelerometerReading[0] = (float) xAccBuffer.get(xAccBuffer.size() - 1)
+                        .doubleValue();
+                mAccelerometerReading[1] = (float) yAccBuffer.get(yAccBuffer.size() - 1)
+                        .doubleValue();
+                mAccelerometerReading[2] = (float) zAccBuffer.get(zAccBuffer.size() - 1)
+                        .doubleValue();
 
             } finally {
                 accBufferLock.unlock();
@@ -101,10 +106,13 @@ public class MotionEstimator {
             azimuthBufferLock.lock();
             try {
                 // get last magnetometer readings
-                System.arraycopy(event.values, 0, mMagnetometerReading, 0, mMagnetometerReading.length);
+                System.arraycopy(event.values, 0, mMagnetometerReading, 0, mMagnetometerReading
+                        .length);
 
-                // compute the device orientation w.r.t. magnetic north (results lie in mOrientationAngles..)
-                SensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading, mMagnetometerReading);
+                // compute the device orientation w.r.t. magnetic north (results lie in
+                // mOrientationAngles..)
+                SensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading,
+                                                mMagnetometerReading);
                 SensorManager.getOrientation(mRotationMatrix, mOrientationAngles);
                 double mAzimuth = (Math.toDegrees(mOrientationAngles[0]) + 360) % 360;
 
@@ -239,17 +247,27 @@ public class MotionEstimator {
             return new Motion(false);
 
         // compute mean orientation angle
-        double meanAzimuth = 0;
         azimuthBufferLock.lock();
         try {
+            // compute mean azimuth
+            double meanAzimuth = 0;
             for (int i = 0; i < AZIMUTH_BUF_SIZE; i++)
                 meanAzimuth += azimuthBuffer.get(i);
             meanAzimuth /= AZIMUTH_BUF_SIZE;
+            return new Motion(true, fmax, meanAzimuth);
+
+            // compute median azimuth
+            //            ArrayList<Double> tmpBuffer = (ArrayList<Double>) azimuthBuffer.clone();
+            //            Collections.sort(tmpBuffer);
+            //            double medianAzimuth = tmpBuffer.get(AZIMUTH_BUF_SIZE / 2);
+            //            return new Motion(true, fmax, medianAzimuth);
+
         } finally {
             azimuthBufferLock.unlock();
         }
 
-        return new Motion(true, fmax, meanAzimuth);
+        // if we go here st went wrong!!
+        //return new Motion(false);
 
     }
 
