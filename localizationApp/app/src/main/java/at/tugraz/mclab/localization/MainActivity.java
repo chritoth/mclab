@@ -80,12 +80,10 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // register sensor listeners
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, accelerationSensor, SensorManager
-                    .SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, accelerationSensor, SensorManager.SENSOR_DELAY_GAME);
         }
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, magnetometerSensor, SensorManager
-                    .SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, magnetometerSensor, SensorManager.SENSOR_DELAY_FASTEST);
         }
 
         // clear buffers to make sure we throw away old measurements..
@@ -171,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             particleFilter.eliminateParticles();
             particleFilter.normalizeParticleWeights();
             particleFilter.resampleParticles();
-            particleFilter.updateCurrentPosition();
+            particleFilter.updateCurrentPosition(false);
 
             runOnUiThread(new Runnable() {
                 @Override
@@ -179,16 +177,15 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                     // draw the updated particles
                     drawParticlesView.clearPanel(imageView);
-                    drawParticlesView.drawParticles(imageView, particleFilter.particles,
-                                                    particleFilter.currentPosition);
+                    drawParticlesView.drawParticles(imageView, particleFilter.particles, particleFilter
+                            .currentPosition);
                 }
             });
 
         }
     }
 
-    protected void updateTextView(final int motionState, final double stepCount, final double
-            azimuth) {
+    protected void updateTextView(final int motionState, final double stepCount, final double azimuth) {
 
         runOnUiThread(new Runnable() {
             @Override
@@ -201,13 +198,13 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
                 String text;
                 switch (motionState) {
                     case MotionEstimator.IDLE:
-                        text = "Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps "
-                                + "taken" + " lately " + "in direction " + direction + ")";
+                        text = "Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps " + "taken" + " " +
+                                "lately " + "in direction " + direction + ")";
                         sensorTextView.setText(text);
                         break;
                     case MotionEstimator.MOVING:
-                        text = "Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps "
-                                + "taken" + " in " + "direction " + direction + ")";
+                        text = "Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps " + "taken" + " in "
+                                + "direction " + direction + ")";
                         sensorTextView.setText(text);
                         break;
                 }

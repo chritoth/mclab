@@ -1,14 +1,16 @@
 package at.tugraz.mclab.localization;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 public class ParticleFilter {
 
     public static final double MAP_Y_HEADING_OFFSET = -63.0; // map north orientation offset for y
     // axis (0° is y axis)
-    private static final double HEADING_STD_DEV = 30.0; // std deviation of the heading
+    private static final double HEADING_STD_DEV = 25.0; // std deviation of the heading
     // uncertainty in degree
-    private static final double STRIDE_UNCERTAINTY = 0.15; // uncertainty in % of the measured
+    private static final double STRIDE_UNCERTAINTY = 0.10; // uncertainty in % of the measured
     // stride
     private static final double STRIDE_MIN = 0.5; // minimum expected human stride length
     private static final double STRIDE_MAX = 1.2; // maximum expected human stride length
@@ -44,14 +46,12 @@ public class ParticleFilter {
             // generate uniformly distributed particles all over the room
             while (particleIdx < numberOfParticles && particleIdx < Ns) {
 
-                double x = room.getRoomCenter().getX() + room.getXLength() * (rngPos.nextDouble()
-                        - 0.5);
-                double y = room.getRoomCenter().getY() + room.getYLength() * (rngPos.nextDouble()
-                        - 0.5);
+                double x = room.getRoomCenter().getX() + room.getXLength() * (rngPos.nextDouble() - 0.5);
+                double y = room.getRoomCenter().getY() + room.getYLength() * (rngPos.nextDouble() - 0.5);
                 Position position = new Position(x, y);
 
-                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) *
-                        (rngStride.nextDouble() - 0.5);
+                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) * (rngStride.nextDouble()
+                        - 0.5);
                 particles[particleIdx] = new Particle(position, stride, weight);
                 particleIdx++;
             }
@@ -73,8 +73,7 @@ public class ParticleFilter {
 
             // we have to take the negative azimuth to compensate for map and world coordinate
             // system dispute
-            double heading = -azimuth + HEADING_STD_DEV * rngHeading.nextGaussian() -
-                    MAP_Y_HEADING_OFFSET;
+            double heading = -azimuth + HEADING_STD_DEV * rngHeading.nextGaussian() - MAP_Y_HEADING_OFFSET;
             heading = Math.toRadians(heading);
 
             // compute new position given the step count + heading
@@ -134,8 +133,7 @@ public class ParticleFilter {
         for (int i = 0; i < Ns; i++) {
             p_resample += p_step;
 
-            while (cdf_idx < (Ns - 1) && (p_resample > cdf[cdf_idx] || particles[cdf_idx]
-                    .getWeight() == 0.0)) {
+            while (cdf_idx < (Ns - 1) && (p_resample > cdf[cdf_idx] || particles[cdf_idx].getWeight() == 0.0)) {
                 cdf_idx++;
             }
 
@@ -153,15 +151,31 @@ public class ParticleFilter {
         particles = resampledParticles;
     }
 
-    public void updateCurrentPosition() {
+    public void updateCurrentPosition(boolean mapEstimate) {
 
-        double max_weight = -1.0;
         Position position = new Position();
-        for (Particle particle : particles) {
-            if (particle.getWeight() > max_weight) {
-                max_weight = particle.getWeight();
-                position = new Position(particle.getPosition());
+
+        if (mapEstimate) {
+            double max_weight = -1.0;
+            for (Particle particle : particles) {
+                if (particle.getWeight() > max_weight) {
+                    max_weight = particle.getWeight();
+                    position = new Position(particle.getPosition());
+                }
             }
+        } else {
+            // take median of all particle positions
+            double[] x = new double[Ns];
+            double[] y = new double[Ns];
+            for (int i = 0; i < Ns; i++) {
+                x[i] = particles[i].getX();
+                y[i] = particles[i].getY();
+            }
+
+            Arrays.sort(x);
+            Arrays.sort(y);
+
+            position = new Position(x[Ns / 2], y[Ns / 2]);
         }
 
         currentPosition = position;
