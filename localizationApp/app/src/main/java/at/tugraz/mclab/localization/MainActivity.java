@@ -57,7 +57,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
         imageView = (ImageView) findViewById(R.id.floorPlanView);
         drawParticlesView = new DrawParticlesView(this);
         drawParticlesView.clearPanel(imageView);
-        drawParticlesView.drawParticles(imageView, particleFilter.particles);
+        drawParticlesView.drawParticles(imageView, particleFilter.particles, new Position());
         //drawParticlesView.drawParticlesTest(imageView);
 
         // schedule UI update thread
@@ -80,10 +80,12 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
         // register sensor listeners
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, accelerationSensor, SensorManager.SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, accelerationSensor, SensorManager
+                    .SENSOR_DELAY_GAME);
         }
         if (accelerationSensor != null) {
-            mSensorManager.registerListener(this, magnetometerSensor, SensorManager.SENSOR_DELAY_GAME);
+            mSensorManager.registerListener(this, magnetometerSensor, SensorManager
+                    .SENSOR_DELAY_GAME);
         }
 
         // clear buffers to make sure we throw away old measurements..
@@ -169,6 +171,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
             particleFilter.eliminateParticles();
             particleFilter.normalizeParticleWeights();
             particleFilter.resampleParticles();
+            particleFilter.updateCurrentPosition();
 
             runOnUiThread(new Runnable() {
                 @Override
@@ -176,14 +179,16 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                     // draw the updated particles
                     drawParticlesView.clearPanel(imageView);
-                    drawParticlesView.drawParticles(imageView, particleFilter.particles);
+                    drawParticlesView.drawParticles(imageView, particleFilter.particles,
+                                                    particleFilter.currentPosition);
                 }
             });
 
         }
     }
 
-    protected void updateTextView(final int motionState, final double stepCount, final double azimuth) {
+    protected void updateTextView(final int motionState, final double stepCount, final double
+            azimuth) {
 
         runOnUiThread(new Runnable() {
             @Override
@@ -193,14 +198,17 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
 
                 // update the text output..
                 double direction = -azimuth - ParticleFilter.MAP_Y_HEADING_OFFSET;
+                String text;
                 switch (motionState) {
                     case MotionEstimator.IDLE:
-                        sensorTextView.setText("Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps " +
-                                                       "taken" + " lately " + "in direction " + direction + ")");
+                        text = "Believe it or not, you are\n\n IDLE\n ( " + stepCount + " steps "
+                                + "taken" + " lately " + "in direction " + direction + ")";
+                        sensorTextView.setText(text);
                         break;
                     case MotionEstimator.MOVING:
-                        sensorTextView.setText("Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps " +
-                                                       "taken" + " in " + "direction " + direction + ")");
+                        text = "Believe it or not, you are\n\n MOVING\n (" + stepCount + "steps "
+                                + "taken" + " in " + "direction " + direction + ")";
+                        sensorTextView.setText(text);
                         break;
                 }
             }

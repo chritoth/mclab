@@ -16,11 +16,13 @@ public class ParticleFilter {
     private final int Ns; // number of particles
     public Particle[] particles;
     private FloorPlan floorPlan;
+    public Position currentPosition;
 
     public ParticleFilter(int Ns) {
         this.floorPlan = new FloorPlan();
         this.Ns = Ns;
         this.particles = new Particle[Ns];
+        currentPosition = new Position();
 
         generateInitialParticles();
     }
@@ -42,12 +44,14 @@ public class ParticleFilter {
             // generate uniformly distributed particles all over the room
             while (particleIdx < numberOfParticles && particleIdx < Ns) {
 
-                double x = room.getRoomCenter().getX() + room.getXLength() * (rngPos.nextDouble() - 0.5);
-                double y = room.getRoomCenter().getY() + room.getYLength() * (rngPos.nextDouble() - 0.5);
+                double x = room.getRoomCenter().getX() + room.getXLength() * (rngPos.nextDouble()
+                        - 0.5);
+                double y = room.getRoomCenter().getY() + room.getYLength() * (rngPos.nextDouble()
+                        - 0.5);
                 Position position = new Position(x, y);
 
-                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) * (rngStride.nextDouble()
-                        - 0.5);
+                double stride = (STRIDE_MIN + STRIDE_MAX) / 2.0 + (STRIDE_MAX - STRIDE_MIN) *
+                        (rngStride.nextDouble() - 0.5);
                 particles[particleIdx] = new Particle(position, stride, weight);
                 particleIdx++;
             }
@@ -67,8 +71,10 @@ public class ParticleFilter {
             double stride = stepCount * particle.getStrideLength();
             stride += 2.0 * STRIDE_UNCERTAINTY * stride * (rngStride.nextDouble() - 0.5);
 
-            // we have to take the negative azimuth to compensate for map and world coordinate system dispute
-            double heading = -azimuth + HEADING_STD_DEV * rngHeading.nextGaussian() - MAP_Y_HEADING_OFFSET;
+            // we have to take the negative azimuth to compensate for map and world coordinate
+            // system dispute
+            double heading = -azimuth + HEADING_STD_DEV * rngHeading.nextGaussian() -
+                    MAP_Y_HEADING_OFFSET;
             heading = Math.toRadians(heading);
 
             // compute new position given the step count + heading
@@ -128,11 +134,13 @@ public class ParticleFilter {
         for (int i = 0; i < Ns; i++) {
             p_resample += p_step;
 
-            while (cdf_idx < (Ns - 1) && (p_resample > cdf[cdf_idx] || particles[cdf_idx].getWeight() == 0.0)) {
+            while (cdf_idx < (Ns - 1) && (p_resample > cdf[cdf_idx] || particles[cdf_idx]
+                    .getWeight() == 0.0)) {
                 cdf_idx++;
             }
 
-            // if the resample particle weight is 0.0 (should only occur for the last part of the cdf) then we take a
+            // if the resample particle weight is 0.0 (should only occur for the last part of the
+            // cdf) then we take a
             // particle with non-zero weight..
             if (particles[cdf_idx].getWeight() == 0.0)
                 resampledParticles[i] = new Particle(resampledParticles[i - 1]);
@@ -143,6 +151,20 @@ public class ParticleFilter {
         }
 
         particles = resampledParticles;
+    }
+
+    public void updateCurrentPosition() {
+
+        double max_weight = -1.0;
+        Position position = new Position();
+        for (Particle particle : particles) {
+            if (particle.getWeight() > max_weight) {
+                max_weight = particle.getWeight();
+                position = new Position(particle.getPosition());
+            }
+        }
+
+        currentPosition = position;
     }
 
 }

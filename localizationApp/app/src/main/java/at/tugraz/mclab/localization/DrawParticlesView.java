@@ -47,7 +47,7 @@ class DrawParticlesView extends View {
 
     }
 
-    public void drawParticles(ImageView iV, Particle[] p) {
+    public void drawParticles(ImageView iV, Particle[] p, Position currentPosition) {
 
         for (Particle particle : p) {
 
@@ -58,8 +58,19 @@ class DrawParticlesView extends View {
 
             iV.setAdjustViewBounds(true);
             iV.setImageBitmap(mutableBitmap);
-
         }
+
+        // draw heighest weighted particle in red (position estimate)
+        Paint mPaint = new Paint();
+        mPaint.setAntiAlias(true);
+        mPaint.setColor(Color.RED);
+        int x = (int) (currentPosition.getX() * xScaling);
+        int y = (int) (currentPosition.getY() * yScaling);
+
+        mCanvas.drawCircle(x, y, 3, mPaint);
+
+        iV.setAdjustViewBounds(true);
+        iV.setImageBitmap(mutableBitmap);
     }
 
     public void drawParticlesTest(ImageView floorPlanImageView) {
