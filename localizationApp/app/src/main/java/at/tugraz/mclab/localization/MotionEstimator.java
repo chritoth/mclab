@@ -19,7 +19,7 @@ public class MotionEstimator {
     public static final double FREQUENCY_THRESHOLD = 0.5;
 
     private static int ACC_BUF_SIZE = 48;
-    private static int AZIMUTH_BUF_SIZE = 101;
+    private static int AZIMUTH_BUF_SIZE = 501;
     private static int NDFT = 64;
     private final DFTAnalysis dftAnalysis = new DFTAnalysis(NDFT, ACC_BUF_SIZE);
 
@@ -30,6 +30,8 @@ public class MotionEstimator {
 
     private ArrayList<Double> azimuthBuffer = new ArrayList<Double>(AZIMUTH_BUF_SIZE);
     private final ReentrantLock azimuthBufferLock = new ReentrantLock();
+
+    private ArrayList<Double> azimuthDuringMotion = new ArrayList<Double>();
 
     private int state = IDLE;
     public double stepCount;
@@ -92,12 +94,9 @@ public class MotionEstimator {
                     return;
 
                 // get last accelerometer readings
-                mAccelerometerReading[0] = (float) xAccBuffer.get(xAccBuffer.size() - 1)
-                        .doubleValue();
-                mAccelerometerReading[1] = (float) yAccBuffer.get(yAccBuffer.size() - 1)
-                        .doubleValue();
-                mAccelerometerReading[2] = (float) zAccBuffer.get(zAccBuffer.size() - 1)
-                        .doubleValue();
+                mAccelerometerReading[0] = (float) xAccBuffer.get(xAccBuffer.size() - 1).doubleValue();
+                mAccelerometerReading[1] = (float) yAccBuffer.get(yAccBuffer.size() - 1).doubleValue();
+                mAccelerometerReading[2] = (float) zAccBuffer.get(zAccBuffer.size() - 1).doubleValue();
 
             } finally {
                 accBufferLock.unlock();
@@ -106,13 +105,11 @@ public class MotionEstimator {
             azimuthBufferLock.lock();
             try {
                 // get last magnetometer readings
-                System.arraycopy(event.values, 0, mMagnetometerReading, 0, mMagnetometerReading
-                        .length);
+                System.arraycopy(event.values, 0, mMagnetometerReading, 0, mMagnetometerReading.length);
 
                 // compute the device orientation w.r.t. magnetic north (results lie in
                 // mOrientationAngles..)
-                SensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading,
-                                                mMagnetometerReading);
+                SensorManager.getRotationMatrix(mRotationMatrix, null, mAccelerometerReading, mMagnetometerReading);
                 SensorManager.getOrientation(mRotationMatrix, mOrientationAngles);
                 double mAzimuth = (Math.toDegrees(mOrientationAngles[0]) + 360) % 360;
 
@@ -250,17 +247,17 @@ public class MotionEstimator {
         azimuthBufferLock.lock();
         try {
             // compute mean azimuth
-            double meanAzimuth = 0;
-            for (int i = 0; i < azimuthBuffer.size(); i++)
-                meanAzimuth += azimuthBuffer.get(i);
-            meanAzimuth /= azimuthBuffer.size();
-            return new Motion(true, fmax, meanAzimuth);
+            //            double meanAzimuth = 0;
+            //            for (int i = 0; i < azimuthBuffer.size(); i++)
+            //                meanAzimuth += azimuthBuffer.get(i);
+            //            meanAzimuth /= azimuthBuffer.size();
+            //            return new Motion(true, fmax, meanAzimuth);
 
             // compute median azimuth
-            //            ArrayList<Double> tmpBuffer = (ArrayList<Double>) azimuthBuffer.clone();
-            //            Collections.sort(tmpBuffer);
-            //            double medianAzimuth = tmpBuffer.get(azimuthBuffer.size() / 2);
-            //            return new Motion(true, fmax, medianAzimuth);
+            ArrayList<Double> tmpBuffer = (ArrayList<Double>) azimuthBuffer.clone();
+            Collections.sort(tmpBuffer);
+            double medianAzimuth = tmpBuffer.get(azimuthBuffer.size() / 2);
+            return new Motion(true, fmax, medianAzimuth);
 
         } finally {
             azimuthBufferLock.unlock();
@@ -277,8 +274,9 @@ public class MotionEstimator {
         switch (state) {
             case IDLE:
                 if (motion.isMoving) {
-                    stepCount = motion.frequency * observationTime * 0.5;
+                    stepCount = 0.0;// motion.frequency * observationTime * 0.5;
                     azimuth = motion.angle;
+                    azimuthDuringMotion.add(motion.angle);
                     state = MOVING;
                 }
                 break;
@@ -286,8 +284,19 @@ public class MotionEstimator {
                 if (motion.isMoving) {
                     stepCount += motion.frequency * observationTime;
                     azimuth = motion.angle;
+                    azimuthDuringMotion.add(motion.angle);
                 } else {
                     state = IDLE;
+
+                    // correct step count
+                    stepCount = 0.5 + stepCount * 0.85;
+
+                    // take median azimuth from all measurements recorded during motion
+                    Collections.sort(azimuthDuringMotion);
+                    azimuth = azimuthDuringMotion.get(azimuthDuringMotion.size() / 2);
+
+                    // clear buffer
+                    azimuthDuringMotion.clear();
                 }
                 break;
         }
