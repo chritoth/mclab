@@ -251,15 +251,15 @@ public class MotionEstimator {
         try {
             // compute mean azimuth
             double meanAzimuth = 0;
-            for (int i = 0; i < AZIMUTH_BUF_SIZE; i++)
+            for (int i = 0; i < azimuthBuffer.size(); i++)
                 meanAzimuth += azimuthBuffer.get(i);
-            meanAzimuth /= AZIMUTH_BUF_SIZE;
+            meanAzimuth /= azimuthBuffer.size();
             return new Motion(true, fmax, meanAzimuth);
 
             // compute median azimuth
             //            ArrayList<Double> tmpBuffer = (ArrayList<Double>) azimuthBuffer.clone();
             //            Collections.sort(tmpBuffer);
-            //            double medianAzimuth = tmpBuffer.get(AZIMUTH_BUF_SIZE / 2);
+            //            double medianAzimuth = tmpBuffer.get(azimuthBuffer.size() / 2);
             //            return new Motion(true, fmax, medianAzimuth);
 
         } finally {
