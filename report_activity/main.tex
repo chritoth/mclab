@@ -1,0 +1,83 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{A Simple Activity Monitoring App\\
+{\large Mobile Computing Lab - Summer Term 2018}
+}
+
+\author{\IEEEauthorblockN{Christian Toth}
+\IEEEauthorblockA{
+\textit{Graz University of Technology}\\
+Graz, Austria \\
+christian.toth@student.tugraz.at}
+\and
+\IEEEauthorblockN{Timur Cerimagic}
+\IEEEauthorblockA{
+\textit{Graz University of Technology}\\
+Graz, Austria \\
+t.cerimagic@student.tugraz.at}
+}
+
+\maketitle
+
+\section{Task Description}
+In order to get familiar with the sensing possibilities provided by smart phones the objective of this work was to develop a simple activity monitoring app running on Android. The desired app should eventually be able to recognize different user movement patterns like walking or jumping. Further requirements are to use appropriate sensor data provided by android and to classify the collected data utilizing a K-Nearest Neighbor (KNN)~\cite{knn1}\cite{knn2} algorithm. To realize the app we divided the project into the following tasks:
+\begin{itemize}
+\item Gathering activity (training) data using the sensors on an Android phone
+\item Off-line feature engineering and model evaluation
+\item Generation of an KNN training set
+\item Implementing the model for Android
+\item Implementing a simple GUI
+\end{itemize}
+
+Our resultant app collects sensor readings from the Androids linear acceleration sensor and extracts 48 frequency domain features every second. The resulting feature vector is classified using KNN over a training set of 172 training samples. We classify movement patterns into four different activities which are idle, jumping, walking and waving.
+
+The remainder of this report is structured as follows. In Section~\ref{sec:features} we explain the feature engineering process and in Section~\ref{sec:model} present evaluation results. Finally, Section~\ref{sec:summary} summarizes the outcome of the project.
+
+\section{Feature Engineering}
+\label{sec:features}
+
+In order to start feature engineering we firstly collected representative sensor data for activities jumping, walking, waving and idle. During collection of the data the phone was held in upright position in front of the user's body. As a sensor we used the linear accelerometer because the linear accelerometer excludes the gravity acceleration from the sensor signal, which we from our intuition is beneficial since we aim to exploit the periodicity in the nature of our movements for classification.\\
+
+As already mentioned, we aim to exploit the inherent periodicity in the nature of the activities. Thus, we decided to do a spectral analysis of the accelerometer data by means of a Discrete Fourier Transform (DFT)\cite{dft}. We assume that no movement pattern has a fundamental frequency larger than 5 Hz. To get a sufficient frequency domain resolution we sample the accelerometer with a sampling frequency of $f_S = 50 Hz$ and take a frame of 48 consecutive samples which equals roughly the time span of one second. We then down-sample the signal frame by a factor of $M = 3$ and compute the DFT which results in 16 frequency domain samples which we take as features. Figure~\ref{fig:dft} shows a typical spectrum of a jumping motion with the generated features. We compute these frequency domain features along each phone axis to get 48 features which we use to classify the motion generating the respective signal frame. 
+
+\begin{figure}[!htp]
+\begin{center}
+\includegraphics[width=0.9\linewidth]{fig/dft}
+\caption{Typical spectrum of a jumping motion and computed feature vectors.}\label{fig:dft}
+\end{center}
+\end{figure}
+
+\section{Model Evaluation}
+\label{sec:model}
+
+
+We randomly split the data into training and test sets in
+80:20 proportion respectively. Initially, we set up a KNN classifier in python where we achieved an accuracy of approximately 97\% on the test set for $K \geq 3$ neighbors. However, after evaluation on smart-phone we set the number of neighbors to $K = 21$ as we found it to be suitable in our case for higher hit probability. As a distance metric we used the Euclidean
+distance, so every new point can be compared with the training data and classified into one of our 4 classes.
+
+
+\section{Summary}
+\label{sec:summary}
+
+A practical demonstration indicates that the mentioned methods and tools were fully applicable in terms of defined problem. Results show around 99\% of accuracy rate, which is more than enough for the given application field. We did not encounter difficulties regarding the functionality of the system and all activities were timely recognized. The KNN algorithm with $K = 21$ neighbors showed good performance on the given hardware architecture. Considering that processing power of the smart-phone was more
+than enough for those kinds of computations, we were enabled to use power and processor hungry mathematical operations without increasing the latency.
+
+
+
+\begin{thebibliography}{00}
+\bibitem{knn1} Fix, E., Hodges, J.L. Discriminatory analysis, nonparametric discrimination: Consistency properties. Technical Report 4, USAF School of Aviation Medicine, Randolph Field, Texas, 1951.
+\bibitem{knn2} Cover, T.M., Hart, P.E. Nearest neighbor pattern classification. IEEE Trans. Inform. Theory, IT-13(1):21–27, 1967.
+\bibitem{dft} Oppenheim, Alan V. and Schafer, Ronald W. Discrete-Time Signal Processing. Prentice Hall Press, 2009.
+\end{thebibliography}
+
+\end{document}
