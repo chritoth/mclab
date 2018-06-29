@@ -41,49 +41,43 @@ In order to get familiar with the sensing possibilities provided by smart phones
 
 Our resultant app collects sensor readings from the Androids linear acceleration sensor and extracts 48 frequency domain features every second. The resulting feature vector is classified using KNN over a training set of 172 training samples. We classify movement patterns into four different activities which are idle, jumping, walking and waving.
 
-The remainder of this report is structured as follows. In Section~\ref{sec:features} we explain the feature engineering and extraction process. In Section ....
-
-Specific implementations and details are going to be explained in the next chapter.
+The remainder of this report is structured as follows. In Section~\ref{sec:features} we explain the feature engineering process and in Section~\ref{sec:model} present evaluation results. Finally, Section~\ref{sec:summary} summarizes the outcome of the project.
 
 \section{Feature Engineering}
 \label{sec:features}
 
-Sensors and methods
-If we start from the beginning of the previously mentioned road, first thing was gathering the sensor
-data. For the jumping, walking, waving and idle activity differentiation, we used accelerometer;
-particularly, linear accelerometer. Reason why we used linear, instead of regular accelerometer, lies in
-fact that linear accelerometer excludes the gravity acceleration that eliminates ability to define phone’s
-orientation, which in our case was positive feature. We needed the app which tracks movement
-independent of phone’s orientation. For the training purposes, phone was held in the upright position.
-We recorded activities one by one and stored them into the separate files, so that we can later add
-classification field to the each (x,y,z) triplet. Data was randomly split into training set and test set in
-80:20 proportion respectively. Initially, we created the model in python and after the success rate of
-99\%, model was transferred to an android. For the feature extraction we used buffer of 48 x,y and z
-value readings. Those values were run through the anti-aliasing filter for smoothing out, downsampled
-to the 16 values and zeropaddded for the discrete Fourier transformation. We have applied FFT (Fast
-Fourier Transform) for window creation of downsampled signal. Python model, as well as the android
-model, were based on KNN classification algorithm [1][2]. Number K (k closest neighbors) was set to 21,
-as we found it to be suitable in our case for higher hit probability. For KNN metrics we used Euclidian
-distance, so every new point can be compared with the training data and classified into one of our 4
-classes.
+In order to start feature engineering we firstly collected representative sensor data for activities jumping, walking, waving and idle. During collection of the data the phone was held in upright position in front of the user's body. As a sensor we used the linear accelerometer because the linear accelerometer excludes the gravity acceleration from the sensor signal, which we from our intuition is beneficial since we aim to exploit the periodicity in the nature of our movements for classification.\\
+
+As already mentioned, we aim to exploit the inherent periodicity in the nature of the activities. Thus, we decided to do a spectral analysis of the accelerometer data by means of a Discrete Fourier Transform (DFT)\cite{dft}. We assume that no movement pattern has a fundamental frequency larger than 5 Hz. To get a sufficient frequency domain resolution we sample the accelerometer with a sampling frequency of $f_S = 50 Hz$ and take a frame of 48 consecutive samples which equals roughly the time span of one second. We then down-sample the signal frame by a factor of $M = 3$ and compute the DFT which results in 16 frequency domain samples which we take as features. Figure~\ref{fig:dft} shows a typical spectrum of a jumping motion with the generated features. We compute these frequency domain features along each phone axis to get 48 features which we use to classify the motion generating the respective signal frame. 
+
+\begin{figure}[!htp]
+\begin{center}
+\includegraphics[width=0.9\linewidth]{fig/dft}
+\caption{Typical spectrum of a jumping motion and computed feature vectors.}\label{fig:dft}
+\end{center}
+\end{figure}
+
+\section{Model Evaluation}
+\label{sec:model}
 
 
-\section{Initial evaluation}
+We randomly split the data into training and test sets in
+80:20 proportion respectively. Initially, we set up a KNN classifier in python where we achieved an accuracy of approximately 97\% on the test set for $K \geq 3$ neighbors. However, after evaluation on smart-phone we set the number of neighbors to $K = 21$ as we found it to be suitable in our case for higher hit probability. As a distance metric we used the Euclidean
+distance, so every new point can be compared with the training data and classified into one of our 4 classes.
 
-Initial evaluation indicates that mentioned methods and tools were fully applicable in terms of defined
-problem. Results show around 99\% of accuracy rate, which is more than enough for the given
-application field. We didn’t have any difficulties regarding the functionality of the system and all
-activities were timely recognized. KNN algorithm with K of 21 neighbors showed good performance on
-the given hardware architecture and considering that processing power of the smartphone was more
-than enough for those kinds of computations, we were enabled to use power and processor hungry
-mathematical operations without increasing the latency.
+
+\section{Summary}
+\label{sec:summary}
+
+A practical demonstration indicates that the mentioned methods and tools were fully applicable in terms of defined problem. Results show around 99\% of accuracy rate, which is more than enough for the given application field. We did not encounter difficulties regarding the functionality of the system and all activities were timely recognized. The KNN algorithm with $K = 21$ neighbors showed good performance on the given hardware architecture. Considering that processing power of the smart-phone was more
+than enough for those kinds of computations, we were enabled to use power and processor hungry mathematical operations without increasing the latency.
 
 
 
 \begin{thebibliography}{00}
 \bibitem{knn1} Fix, E., Hodges, J.L. Discriminatory analysis, nonparametric discrimination: Consistency properties. Technical Report 4, USAF School of Aviation Medicine, Randolph Field, Texas, 1951.
 \bibitem{knn2} Cover, T.M., Hart, P.E. Nearest neighbor pattern classification. IEEE Trans. Inform. Theory, IT-13(1):21–27, 1967.
+\bibitem{dft} Oppenheim, Alan V. and Schafer, Ronald W. Discrete-Time Signal Processing. Prentice Hall Press, 2009.
 \end{thebibliography}
-
 
 \end{document}
