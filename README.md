@@ -1,4 +1,4 @@
-#Mobile Computing Laboratory
+# Mobile Computing Laboratory
 
 This repository contains apps for (simple) activity monitoring and indoor localization for android 
 smartphone. Moreover, Python notebooks used during the model developement process as well as short summary reports 
